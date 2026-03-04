@@ -16,6 +16,7 @@ import {
   Settings,
   Shield,
   Heart,
+  Store,
 } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
 import { useAuth } from "@/lib/contexts/auth.context";
@@ -124,6 +125,17 @@ export function Navbar() {
             <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
           ) : user ? (
             <div className="relative">
+              {/* Jadi Penjual - regular users only */}
+              {user.role === 'user' && (
+                <Link
+                  href="/apply-owner"
+                  className="mr-2 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
+                >
+                  <Store className="h-4 w-4" aria-hidden="true" />
+                  Jadi Penjual
+                </Link>
+              )}
+
               {/* Dashboard - show based on permissions */}
               {hasPermission('canViewDashboard') && (
                 <Link
@@ -131,7 +143,7 @@ export function Navbar() {
                   className="mr-2 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
                 >
                   <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
-                  {user.role === 'admin' ? 'Admin' : user.role === 'owner' ? 'Dashboard' : 'Kelola'}
+                  {user.role === 'admin' ? 'Admin' : 'Dashboard'}
                 </Link>
               )}
 
@@ -296,6 +308,18 @@ export function Navbar() {
                 </Link>
               </div>
 
+              {/* Jadi Penjual - regular users only (mobile) */}
+              {user.role === 'user' && (
+                <Link
+                  href="/apply-owner"
+                  className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Store className="h-4 w-4" aria-hidden="true" />
+                  Jadi Penjual
+                </Link>
+              )}
+
               {/* Dashboard - show based on permissions */}
               {hasPermission('canViewDashboard') && (
                 <Link
@@ -304,7 +328,7 @@ export function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
-                  {user.role === 'admin' ? 'Admin Panel' : user.role === 'owner' ? 'Dashboard Toko' : 'Dashboard'}
+                  {user.role === 'admin' ? 'Admin Panel' : 'Dashboard Toko'}
                 </Link>
               )}
 

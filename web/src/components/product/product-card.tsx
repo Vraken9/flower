@@ -6,6 +6,9 @@ import { motion } from "framer-motion";
 import { ShoppingCart, Heart } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/lib/store/cart";
+import { useAuth } from "@/lib/contexts/auth.context";
+import { useFavorites } from "@/lib/contexts/favorites.context";
+import { cn } from "@/lib/utils";
 import type { ProductWithShop } from "@/lib/types";
 
 interface ProductCardProps {
@@ -14,7 +17,23 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
-  const addItem = useCartStore((s) => s.addItem);
+  const { addItemWithAuth } = useCartStore();
+  const { user } = useAuth();
+  const { isFavorited, toggleFavorite, addToFavoritesWithAuth } = useFavorites();
+
+  const favorited = isFavorited(product.id);
+
+  const handleFavoriteClick = async () => {
+    if (!user) {
+      await addToFavoritesWithAuth(product.id);
+      return;
+    }
+    try {
+      await toggleFavorite(product.id);
+    } catch {
+      // Error handled in context
+    }
+  };
 
   return (
     <motion.article
@@ -59,13 +78,19 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </div>
       </Link>
 
-      {/* Favorite Button */}
+      {/* Favorite Button – optimistic toggle */}
       <button
         type="button"
-        className="absolute right-3 top-3 rounded-full bg-white/80 p-2 text-gray-400 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
-        aria-label={`Tambah ${product.name} ke favorit`}
+        onClick={handleFavoriteClick}
+        className={cn(
+          "absolute right-3 top-3 rounded-full p-2 shadow-sm backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2",
+          favorited
+            ? "bg-rose-500 text-white hover:bg-rose-600"
+            : "bg-white/80 text-gray-400 hover:bg-white hover:text-rose-500"
+        )}
+        aria-label={favorited ? `Hapus ${product.name} dari favorit` : `Tambah ${product.name} ke favorit`}
       >
-        <Heart className="h-4 w-4" aria-hidden="true" />
+        <Heart className={cn("h-4 w-4", favorited && "fill-current")} aria-hidden="true" />
       </button>
 
       {/* Content */}
@@ -94,7 +119,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           </p>
           <button
             type="button"
-            onClick={() => addItem(product)}
+            onClick={() => addItemWithAuth(product, !!user)}
             className="rounded-xl bg-rose-50 p-2 text-rose-500 transition-colors hover:bg-rose-100 active:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
             aria-label={`Tambah ${product.name} ke keranjang`}
           >
