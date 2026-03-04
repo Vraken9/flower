@@ -19,14 +19,10 @@ export async function getAuthUser(
   if (!authHeader?.startsWith("Bearer ")) return null;
 
   const token = authHeader.slice(7);
-
-  // Create a supabase client authenticated with the user's token
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    }
+    { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 
   const {
@@ -36,7 +32,6 @@ export async function getAuthUser(
 
   if (authError || !user) return null;
 
-  // Fetch profile to get the role
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, full_name")
@@ -59,12 +54,9 @@ export async function requireRole(
   roles: AuthUser["role"][]
 ): Promise<AuthUser> {
   const user = await getAuthUser(request);
-  if (!user) {
-    throw new AuthError("Unauthorized", 401);
-  }
-  if (!roles.includes(user.role)) {
+  if (!user) throw new AuthError("Unauthorized", 401);
+  if (!roles.includes(user.role))
     throw new AuthError("Forbidden – insufficient role", 403);
-  }
   return user;
 }
 
