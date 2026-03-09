@@ -133,6 +133,69 @@ Open [http://localhost:3000](http://localhost:3000).
 | owner.edelweis@gmail.com     | owner123456    | owner |
 | buyer@gmail.com              | buyer123456    | user  |
 
+## Docker Deployment (VPS)
+
+### Prerequisites
+- Docker 20+ or Podman 4+
+- docker-compose or podman-compose
+
+### 1. Clone & configure
+
+```bash
+git clone https://github.com/your-username/flower-marketplace.git
+cd flower-marketplace
+cp .env.example .env
+# Edit .env with your Supabase credentials
+nano .env
+```
+
+### 2. Build & run
+
+```bash
+# Using Docker
+docker-compose up -d --build
+
+# Using Podman
+podman-compose up -d --build
+```
+
+### 3. Access
+Open `http://your-vps-ip:3000`
+
+### Common commands
+
+```bash
+# View logs
+docker-compose logs -f
+
+# Restart
+docker-compose restart
+
+# Stop
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up -d --build
+```
+
+### Production with Nginx (recommended)
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
 ## API Routes
 
 | Method   | Endpoint                        | Auth    | Description                     |
