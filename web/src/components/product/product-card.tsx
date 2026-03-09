@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -17,11 +18,17 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const [mounted, setMounted] = useState(false);
   const { addItemWithAuth } = useCartStore();
   const { user } = useAuth();
   const { isFavorited, toggleFavorite, addToFavoritesWithAuth } = useFavorites();
 
-  const favorited = isFavorited(product.id);
+  // Only check favorites after mount to prevent hydration mismatch
+  const favorited = mounted ? isFavorited(product.id) : false;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleFavoriteClick = async () => {
     if (!user) {

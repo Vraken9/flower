@@ -26,11 +26,20 @@ import { cn } from "@/lib/utils";
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const totalItems = useCartStore((s) => s.totalItems());
+  const [mounted, setMounted] = useState(false);
+  const totalItemsRaw = useCartStore((s) => s.totalItems());
   const { user, logout, loading, hasPermission } = useAuth();
   const { getFavoriteCount } = useFavorites();
   
-  const favoriteCount = getFavoriteCount();
+  const favoriteCountRaw = getFavoriteCount();
+
+  // Prevent hydration mismatch - only show counts after mount
+  const totalItems = mounted ? totalItemsRaw : 0;
+  const favoriteCount = mounted ? favoriteCountRaw : 0;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -43,6 +52,18 @@ export function Navbar() {
       return () => document.removeEventListener('click', handleClickOutside)
     }
   }, [userMenuOpen])
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen])
 
   const navLinks = [
     { href: "/", label: "Beranda" },
@@ -257,8 +278,8 @@ export function Navbar() {
       {/* Mobile Menu */}
       <div
         className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out md:hidden",
-          mobileMenuOpen ? "max-h-96 border-t border-rose-100" : "max-h-0"
+          "transition-all duration-300 ease-in-out md:hidden",
+          mobileMenuOpen ? "max-h-[80vh] overflow-y-auto border-t border-rose-100" : "max-h-0 overflow-hidden"
         )}
       >
         <div className="space-y-1 px-4 pb-4 pt-2">
