@@ -309,7 +309,7 @@ export function RegisterForm() {
       </div>
 
       <div className="text-xs text-gray-500 text-center">
-        Dengan mendaftar, Anda akan mendapat role <strong>"user"</strong> (pembeli).
+        Dengan mendaftar, Anda akan mendapat role <strong>&quot;user&quot;</strong> (pembeli).
         <br />
         Untuk jadi pemilik toko, buat toko di Dashboard setelah login.
       </div>

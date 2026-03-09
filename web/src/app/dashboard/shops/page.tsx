@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Store, 
   Trash2, 
-  Edit, 
   ToggleLeft, 
   ToggleRight, 
   Search,
@@ -158,9 +158,11 @@ export default function AdminShopsPage() {
                   {/* Shop Image */}
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-100">
                     {shop.image_url ? (
-                      <img
+                      <Image
                         src={shop.image_url}
                         alt={shop.name}
+                        width={64}
+                        height={64}
                         className="h-full w-full object-cover"
                       />
                     ) : (

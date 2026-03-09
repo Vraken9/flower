@@ -27,6 +27,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const favorited = mounted ? isFavorited(product.id) : false;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional for hydration fix
     setMounted(true);
   }, []);
 

@@ -14,7 +14,6 @@ import {
   LogIn,
   UserPlus,
   Settings,
-  Shield,
   Heart,
   Store,
 } from "lucide-react";
@@ -38,6 +37,7 @@ export function Navbar() {
   const favoriteCount = mounted ? favoriteCountRaw : 0;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional for hydration fix
     setMounted(true);
   }, []);
 
@@ -165,17 +165,6 @@ export function Navbar() {
                 >
                   <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
                   {user.role === 'admin' ? 'Admin' : 'Dashboard'}
-                </Link>
-              )}
-
-              {/* Admin Panel - admin only */}
-              {hasPermission('canViewAdminPanel') && (
-                <Link
-                  href="/admin"
-                  className="mr-2 inline-flex items-center gap-2 rounded-xl bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
-                >
-                  <Shield className="h-4 w-4" aria-hidden="true" />
-                  Admin
                 </Link>
               )}
 
@@ -352,18 +341,6 @@ export function Navbar() {
                 >
                   <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
                   {user.role === 'admin' ? 'Admin Panel' : 'Dashboard Toko'}
-                </Link>
-              )}
-
-              {/* Admin Panel - admin only */}
-              {hasPermission('canViewAdminPanel') && (
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Shield className="h-4 w-4" aria-hidden="true" />
-                  Admin Panel
                 </Link>
               )}
 

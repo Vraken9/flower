@@ -2,7 +2,6 @@
 
 import { cookies } from "next/headers";
 import { ensureProfile } from "@/lib/supabase/ensure-profile";
-import { createClient } from "@/lib/supabase/client";
 
 /**
  * Server action: called from the client after a user signs up

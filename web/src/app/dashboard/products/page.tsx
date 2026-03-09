@@ -56,11 +56,11 @@ async function getProductsForUser() {
     .eq("shop_id", shop.id)
     .order("created_at", { ascending: false });
 
-  return { products: (data as ProductWithShop[]) || [], isAdmin: false };
+  return { products: (data as ProductWithShop[]) || [] };
 }
 
 export default async function DashboardProductsPage() {
-  const { products, isAdmin } = await getProductsForUser();
+  const { products } = await getProductsForUser();
 
   return (
     <div>

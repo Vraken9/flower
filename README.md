@@ -77,8 +77,7 @@ A full-stack flower marketplace with role-based access control, built with **Nex
 │   ├── 003_owner_onboarding_applications.sql
 │   └── rollback_001_002.sql
 ├── scripts/dummy-photos.mjs    # Seed product/shop images
-├── .github/workflows/ci.yml    # CI pipeline
-└── backend/                    # Legacy Express server (deprecated)
+└── .github/workflows/ci.yml    # CI pipeline
 ```
 
 ## Getting Started

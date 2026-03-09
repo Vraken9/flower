@@ -46,7 +46,7 @@ export interface AuthResponse {
 export interface ApiError {
   success: false
   message: string
-  errors?: any
+  errors?: Record<string, string[]>
 }
 
 // Role permissions

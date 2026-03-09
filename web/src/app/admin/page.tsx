@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import {
   Store,
   Package,
-  Users,
   FileText,
   Shield,
   ArrowLeft,
@@ -15,7 +14,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  useAuth(); // Verify user is logged in
   const [stats, setStats] = useState({
     shops: 0,
     products: 0,

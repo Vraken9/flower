@@ -146,6 +146,7 @@ function generateDailyData(
   return data;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Supabase query result
 function processShopStats(shops: any[]) {
   return shops.map(shop => {
     return {

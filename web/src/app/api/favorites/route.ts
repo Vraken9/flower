@@ -10,7 +10,7 @@ import { createServerClient } from "@/lib/supabase/server";
  * Response: { success, data: { action: "added" | "removed" } }
  */
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerClient();
     

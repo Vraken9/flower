@@ -8,7 +8,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingCart, Store, Trash2 } from "lucide-react";
+import { Heart, Store, Trash2 } from "lucide-react";
 import { useFavorites } from "@/lib/contexts/favorites.context";
 import { useAuth } from "@/lib/contexts/auth.context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -16,7 +16,7 @@ import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { formatPrice } from "@/lib/utils";
 
 export default function FavoritesPage() {
-  const { user } = useAuth();
+  useAuth(); // Verify user is logged in
   const { 
     favorites, 
     isLoading, 

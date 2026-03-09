@@ -32,9 +32,8 @@ vi.mock("@supabase/supabase-js", () => {
 
 // Now import after mocking
 import { getAuthUser, requireRole, AuthError } from "@/lib/api/auth-guard";
-import { createClient } from "@supabase/supabase-js";
 
-// Access the mocks
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic mock structure
 const mocks = (await import("@supabase/supabase-js")) as any;
 const { mockGetUser, mockSingle } = mocks.__mocks;
 
@@ -45,7 +44,7 @@ function fakeRequest(token?: string) {
     headers: {
       get: (key: string) => headers.get(key) || null,
     },
-  } as any;
+  } as unknown as Request;
 }
 
 describe("getAuthUser", () => {

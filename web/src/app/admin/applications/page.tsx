@@ -29,6 +29,7 @@ export default function AdminApplicationsPage() {
 
   useEffect(() => {
     fetchApplications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch only on session change
   }, [session]);
 
   const fetchApplications = async () => {

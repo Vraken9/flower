@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth.context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 
@@ -75,7 +75,7 @@ export default function AdminNewProductPage() {
       } else {
         setError(data.error || "Gagal menambahkan produk");
       }
-    } catch (err) {
+    } catch {
       setError("Terjadi kesalahan");
     } finally {
       setLoading(false);

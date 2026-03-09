@@ -6,7 +6,7 @@ import { createServerClient } from "@/lib/supabase/server";
  * POST /api/applications → Submit a new owner application
  */
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerClient();
     
