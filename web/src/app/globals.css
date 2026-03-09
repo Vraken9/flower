@@ -62,3 +62,75 @@ body {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* ─── Mobile-First Responsive Utilities ─── */
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive table wrapper with scroll shadow */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive::-webkit-scrollbar {
+  height: 4px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 640px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Stack product table as cards on mobile */
+  .mobile-card-table thead {
+    display: none;
+  }
+  .mobile-card-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .mobile-card-table tbody td {
+    padding: 0;
+    border: none;
+  }
+  .mobile-card-table tbody td:first-child {
+    flex-shrink: 0;
+  }
+  .mobile-card-table tbody td:nth-child(2) {
+    flex: 1;
+    min-width: 0;
+  }
+  .mobile-card-table tbody td:nth-child(3) {
+    display: none;
+  }
+  .mobile-card-table tbody td:nth-child(4) {
+    width: auto;
+  }
+  .mobile-card-table tbody td:last-child {
+    margin-left: auto;
+  }
+}
+
+/* Safe area for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

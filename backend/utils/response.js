@@ -36,4 +36,10 @@ const error = (res, message = 'Terjadi kesalahan', statusCode = 500, errors = nu
   return res.status(statusCode).json(response)
 }
 
-module.exports = { success, error }
+module.exports = { 
+  success, 
+  error,
+  // Aliases for backward compatibility
+  successResponse: success,
+  errorResponse: error
+}

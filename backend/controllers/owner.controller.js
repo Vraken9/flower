@@ -214,27 +214,63 @@ const _getOwnerShopId = async (userId) => {
 
 // ──────────────────────────────────────────
 //  GET /api/owner/products
-//  Ambil semua produk di toko owner
+//  Ambil produk berdasarkan role:
+//  - Owner: hanya produk di toko miliknya
+//  - Admin: semua produk dari semua toko
 // ──────────────────────────────────────────
 const getMyProducts = async (req, res) => {
   try {
-    const shopId = await _getOwnerShopId(req.user.id)
+    const { page = 1, limit = 50, search } = req.query
+    const userRole = req.user.role
 
-    if (!shopId) {
-      return error(res, 'Anda belum memiliki toko.', 404)
+    let query = supabaseAdmin
+      .from('products')
+      .select('*, shops(id, name, location)', { count: 'exact' })
+
+    // Filter berdasarkan role
+    if (userRole === ROLES.ADMIN) {
+      // Admin bisa melihat semua produk
+      // Tidak ada filter shop_id
+    } else if (userRole === ROLES.OWNER) {
+      // Owner hanya bisa melihat produk di tokonya sendiri
+      const shopId = await _getOwnerShopId(req.user.id)
+
+      if (!shopId) {
+        return error(res, 'Anda belum memiliki toko.', 404)
+      }
+
+      query = query.eq('shop_id', shopId)
+    } else {
+      // Role lain tidak diizinkan
+      return error(res, 'Anda tidak memiliki akses ke fitur ini.', 403)
     }
 
-    const { data: products, error: queryError } = await supabaseAdmin
-      .from('products')
-      .select('*')
-      .eq('shop_id', shopId)
+    // Pencarian berdasarkan nama
+    if (search) {
+      query = query.ilike('name', `%${search}%`)
+    }
+
+    // Pagination
+    const offset = (Number(page) - 1) * Number(limit)
+    query = query
       .order('created_at', { ascending: false })
+      .range(offset, offset + Number(limit) - 1)
+
+    const { data: products, error: queryError, count } = await query
 
     if (queryError) {
       return error(res, 'Gagal mengambil data produk.', 500)
     }
 
-    return success(res, products)
+    return success(res, {
+      products,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: count,
+        totalPages: Math.ceil(count / Number(limit)),
+      },
+    })
   } catch (err) {
     console.error('Get my products error:', err.message)
     return error(res, 'Gagal mengambil data produk.', 500)
@@ -244,15 +280,14 @@ const getMyProducts = async (req, res) => {
 // ──────────────────────────────────────────
 //  POST /api/owner/products
 //  Tambah produk baru ke toko owner
+//  shop_id SELALU diambil dari sesi, bukan dari client
 // ──────────────────────────────────────────
 const createProduct = async (req, res) => {
   try {
+    // Ambil data dari body (sudah divalidasi oleh Zod middleware)
     const { name, description, price, category, stock } = req.body
 
-    if (!name || !price) {
-      return error(res, 'Nama dan harga produk wajib diisi.', 400)
-    }
-
+    // SECURITY: Ambil shop_id dari sesi server, ABAIKAN input dari client
     const shopId = await _getOwnerShopId(req.user.id)
 
     if (!shopId) {
@@ -286,18 +321,22 @@ const createProduct = async (req, res) => {
 // ──────────────────────────────────────────
 //  PUT /api/owner/products/:id
 //  Update produk milik owner
+//  SECURITY: shop_id tidak bisa diubah via API
+//  Owner hanya bisa edit produk di tokonya sendiri
 // ──────────────────────────────────────────
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params
+    // SECURITY: Abaikan shop_id dari request body jika ada
     const { name, description, price, category, stock } = req.body
 
+    // Ambil shop_id dari sesi server
     const shopId = await _getOwnerShopId(req.user.id)
     if (!shopId) {
       return error(res, 'Anda belum memiliki toko.', 404)
     }
 
-    // Pastikan produk ini milik toko owner
+    // SECURITY: Pastikan produk ini milik toko owner (mencegah manipulasi)
     const { data: existingProduct } = await supabaseAdmin
       .from('products')
       .select('id')
@@ -309,7 +348,7 @@ const updateProduct = async (req, res) => {
       return error(res, 'Produk tidak ditemukan di toko Anda.', 404)
     }
 
-    // Siapkan data update
+    // Siapkan data update (tanpa shop_id - tidak bisa diubah)
     const updateData = {}
     if (name) updateData.name = name
     if (description !== undefined) updateData.description = description

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 async function getProducts() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from("products")

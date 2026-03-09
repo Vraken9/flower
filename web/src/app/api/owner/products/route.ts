@@ -1,27 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { requireRole, AuthError } from "@/lib/api/auth-guard";
+import { createServerClient } from "@/lib/supabase/server";
 
 /**
  * GET  /api/owner/products       → List owner's products
  * POST /api/owner/products       → Create a new product
  */
 
-function supabaseWithToken(token: string) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
-}
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const user = await requireRole(request, ["owner", "admin"]);
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
+    const supabase = await createServerClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    // Find the owner's shop
+    // Check if user is owner or admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || !["owner", "admin"].includes(profile.role)) {
+      return NextResponse.json(
+        { success: false, message: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    // Find the owner's shop (admin gets all)
+    if (profile.role === "admin") {
+      const { data: products, error } = await supabase
+        .from("products")
+        .select("*, shops ( name )")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        return NextResponse.json(
+          { success: false, message: error.message },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ success: true, data: products });
+    }
+
+    // Owner sees only their products
     const { data: shop } = await supabase
       .from("shops")
       .select("id")
@@ -38,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     const { data: products, error } = await supabase
       .from("products")
-      .select("*")
+      .select("*, shops ( name )")
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false });
 
@@ -50,13 +77,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: products });
-  } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json(
-        { success: false, message: err.message },
-        { status: err.status }
-      );
-    }
+  } catch (error) {
+    console.error("[GET /api/owner/products] Exception:", error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }
@@ -66,12 +88,32 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireRole(request, ["owner"]);
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
+    const supabase = await createServerClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user is owner
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || !["owner", "admin"].includes(profile.role)) {
+      return NextResponse.json(
+        { success: false, message: "Forbidden - must be owner" },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
-    const { name, description, price, image_url, category, stock } = body;
+    const { name, description, price, image_url, category, stock, shop_id } = body;
 
     if (!name || price == null) {
       return NextResponse.json(
@@ -81,23 +123,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the owner's shop
-    const { data: shop } = await supabase
-      .from("shops")
-      .select("id")
-      .eq("owner_id", user.id)
-      .single();
+    let targetShopId = shop_id;
+    
+    if (!targetShopId) {
+      const { data: shop } = await supabase
+        .from("shops")
+        .select("id")
+        .eq("owner_id", user.id)
+        .single();
 
-    if (!shop) {
-      return NextResponse.json(
-        { success: false, message: "You must create a shop first" },
-        { status: 400 }
-      );
+      if (!shop) {
+        return NextResponse.json(
+          { success: false, message: "You must create a shop first" },
+          { status: 400 }
+        );
+      }
+      targetShopId = shop.id;
     }
 
     const { data: product, error } = await supabase
       .from("products")
       .insert({
-        shop_id: shop.id,
+        shop_id: targetShopId,
         name,
         description: description || null,
         price: Number(price),
@@ -109,6 +156,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      console.error("[POST /api/owner/products] Insert error:", error);
       return NextResponse.json(
         { success: false, message: error.message },
         { status: 500 }
@@ -119,13 +167,8 @@ export async function POST(request: NextRequest) {
       { success: true, data: product, message: "Product created" },
       { status: 201 }
     );
-  } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json(
-        { success: false, message: err.message },
-        { status: err.status }
-      );
-    }
+  } catch (error) {
+    console.error("[POST /api/owner/products] Exception:", error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }

@@ -19,7 +19,14 @@ const router = require('express').Router()
 const authenticate = require('../middlewares/auth.middleware')
 const authorize = require('../middlewares/role.middleware')
 const upload = require('../middlewares/upload.middleware')
+const { validate } = require('../middlewares/validate.middleware')
 const { ROLES } = require('../utils/constants')
+const {
+  createShopSchema,
+  updateShopSchema,
+  createProductSchemaWithPreprocess,
+  updateProductSchemaWithPreprocess,
+} = require('../utils/schemas')
 const {
   createShop,
   getMyShop,
@@ -34,11 +41,11 @@ const {
 
 // ── Toko ──
 // Buat toko: user biasa bisa akses (akan menjadi owner setelah buat toko)
-router.post('/shop', authenticate, createShop)
+router.post('/shop', authenticate, validate(createShopSchema), createShop)
 
 // Kelola toko: hanya owner & admin
 router.get('/shop', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), getMyShop)
-router.put('/shop', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), updateMyShop)
+router.put('/shop', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), validate(updateShopSchema), updateMyShop)
 router.put(
   '/shop/image',
   authenticate,
@@ -50,8 +57,8 @@ router.put(
 // ── Produk ──
 // Semua operasi produk: hanya owner & admin
 router.get('/products', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), getMyProducts)
-router.post('/products', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), createProduct)
-router.put('/products/:id', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), updateProduct)
+router.post('/products', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), validate(createProductSchemaWithPreprocess), createProduct)
+router.put('/products/:id', authenticate, authorize(ROLES.OWNER, ROLES.ADMIN), validate(updateProductSchemaWithPreprocess), updateProduct)
 router.put(
   '/products/:id/image',
   authenticate,

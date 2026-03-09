@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { ShopForm } from "@/components/dashboard/shop-form";
 import type { Shop } from "@/lib/types";
@@ -7,20 +8,46 @@ export const metadata: Metadata = {
   title: "Profil Toko",
 };
 
-async function getShops() {
-  const supabase = createServerClient();
+async function getOwnerShop() {
+  const supabase = await createServerClient();
+  
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  // Get user's profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = profile?.role === "admin";
+
+  // If admin, get all shops for selection (they can manage any shop)
+  if (isAdmin) {
+    const { data } = await supabase
+      .from("shops")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    return (data as Shop[])?.[0] || null;
+  }
+
+  // If owner, get only their shop
   const { data } = await supabase
     .from("shops")
     .select("*")
-    .order("created_at", { ascending: false })
-    .limit(1);
+    .eq("owner_id", user.id)
+    .single();
 
-  return (data as Shop[]) || [];
+  return data as Shop | null;
 }
 
 export default async function ShopDashboardPage() {
-  const shops = await getShops();
-  const shop = shops[0] || null;
+  const shop = await getOwnerShop();
 
   return (
     <div>

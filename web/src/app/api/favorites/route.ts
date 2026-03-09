@@ -1,43 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getAuthUser } from "@/lib/api/auth-guard";
+import { createServerClient } from "@/lib/supabase/server";
 
 /**
- * POST /api/favorites/toggle   → Toggle a product in/out of favorites
- * GET  /api/favorites          → List user's favorites with product details
+ * POST /api/favorites → Toggle a product in/out of favorites
+ * GET  /api/favorites → List user's favorites with product details
+ * DELETE /api/favorites?product_id=xxx → Remove from favorites
  *
  * Body (POST): { product_id: string }
  * Response: { success, data: { action: "added" | "removed" } }
  */
 
-function supabaseWithToken(token: string) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const supabase = await createServerClient();
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
-
     const { data, error } = await supabase
       .from("favorites")
-      .select("*, products(id, name, price, image_url, category, stock, shops(id, name))")
+      .select("*, products(id, shop_id, name, description, price, image_url, category, stock, created_at, shops(id, name, location))")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
+      console.error("[GET /api/favorites] Supabase error:", error);
       return NextResponse.json(
         { success: false, message: error.message },
         { status: 500 }
@@ -45,9 +39,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data });
-  } catch {
+  } catch (error) {
+    console.error("[GET /api/favorites] Exception:", error);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
@@ -55,16 +50,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const supabase = await createServerClient();
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
-
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
 
     const body = await request.json();
     const { product_id } = body;
@@ -122,9 +118,60 @@ export async function POST(request: NextRequest) {
         message: "Added to favorites",
       });
     }
-  } catch {
+  } catch (error) {
+    console.error("[POST /api/favorites] Exception:", error);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createServerClient();
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const product_id = searchParams.get("product_id");
+
+    if (!product_id) {
+      return NextResponse.json(
+        { success: false, message: "product_id is required" },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("favorites")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("product_id", product_id);
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Removed from favorites",
+    });
+  } catch (error) {
+    console.error("[DELETE /api/favorites] Exception:", error);
+    return NextResponse.json(
+      { success: false, message: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

@@ -140,7 +140,7 @@ export default function FavoritesPage() {
                     </button>
 
                     {/* Stock badge */}
-                    {favorite.products.stock_quantity <= 0 && (
+                    {favorite.products.stock <= 0 && (
                       <div className="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs rounded-full font-medium">
                         Stok Habis
                       </div>
@@ -178,9 +178,9 @@ export default function FavoritesPage() {
                     </div>
 
                     {/* Stock info */}
-                    {favorite.products.stock_quantity > 0 && favorite.products.stock_quantity < 5 && (
+                    {favorite.products.stock > 0 && favorite.products.stock < 5 && (
                       <p className="text-xs text-orange-600 mb-3">
-                        Hanya {favorite.products.stock_quantity} tersisa!
+                        Hanya {favorite.products.stock} tersisa!
                       </p>
                     )}
 

@@ -88,8 +88,8 @@ export function Navbar() {
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
 
-          {/* Cart - only show for authenticated users */}
-          {user && (
+          {/* Cart - only show for regular users */}
+          {user && user.role === 'user' && (
             <Link
               href="/cart"
               className="relative rounded-xl p-2.5 text-gray-500 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
@@ -104,8 +104,8 @@ export function Navbar() {
             </Link>
           )}
 
-          {/* Favorites - only show for authenticated users */}
-          {user && (
+          {/* Favorites - only show for regular users */}
+          {user && user.role === 'user' && (
             <Link
               href="/favorites"
               className="relative rounded-xl p-2.5 text-gray-500 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
@@ -222,8 +222,8 @@ export function Navbar() {
 
         {/* Mobile Menu Button */}
         <div className="flex items-center gap-2 md:hidden">
-          {/* Cart - only show for authenticated users */}
-          {user && (
+          {/* Cart - only show for regular users */}
+          {user && user.role === 'user' && (
             <Link
               href="/cart"
               className="relative rounded-xl p-2 text-gray-500 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
@@ -277,7 +277,8 @@ export function Navbar() {
           {/* Auth-based Navigation */}
           {user ? (
             <>
-              {/* Quick Actions for authenticated users */}
+              {/* Quick Actions for regular users only */}
+              {user.role === 'user' && (
               <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
                 <Link
                   href="/cart"
@@ -307,6 +308,7 @@ export function Navbar() {
                   )}
                 </Link>
               </div>
+              )}
 
               {/* Jadi Penjual - regular users only (mobile) */}
               {user.role === 'user' && (

@@ -18,6 +18,7 @@ export function ShopForm({ shop }: ShopFormProps) {
     description: shop?.description || "",
     location: shop?.location || "",
     image_url: shop?.image_url || "",
+    whatsapp: shop?.whatsapp || "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{
@@ -38,11 +39,7 @@ export function ShopForm({ shop }: ShopFormProps) {
     setMessage(null);
 
     try {
-      // TODO: Replace with server action when backend is ready
-      const url = isEditing
-        ? `http://localhost:3000/api/admin/shops/${shop.id}`
-        : "http://localhost:3000/api/admin/shops";
-
+      const url = "/api/owner/shop";
       const res = await fetch(url, {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,17 +51,28 @@ export function ShopForm({ shop }: ShopFormProps) {
       if (result.success) {
         setMessage({
           type: "success",
-          text: isEditing
+          text: result.message || (isEditing
             ? "Profil toko berhasil diperbarui!"
-            : "Toko berhasil dibuat!",
+            : "Toko berhasil dibuat!"),
         });
+        
+        // Refresh the page after successful creation/update
+        if (!isEditing) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       } else {
-        setMessage({ type: "error", text: "Gagal menyimpan. Coba lagi." });
+        setMessage({ 
+          type: "error", 
+          text: result.message || "Gagal menyimpan. Coba lagi." 
+        });
       }
-    } catch {
+    } catch (error) {
+      console.error("Shop form error:", error);
       setMessage({
         type: "error",
-        text: "Pastikan server backend aktif.",
+        text: "Terjadi kesalahan. Silakan coba lagi.",
       });
     } finally {
       setIsSubmitting(false);
@@ -134,6 +142,19 @@ export function ShopForm({ shop }: ShopFormProps) {
         onChange={handleChange}
         placeholder="https://\u2026"
       />
+
+      <Input
+        label="Nomor WhatsApp (wajib untuk checkout)"
+        name="whatsapp"
+        type="tel"
+        value={formData.whatsapp}
+        onChange={handleChange}
+        placeholder="08123456789"
+        required
+      />
+      <p className="-mt-3 text-xs text-gray-500">
+        Format: 08xxx (tanpa spasi). Pelanggan akan menghubungi nomor ini untuk checkout.
+      </p>
 
       <Button
         type="submit"

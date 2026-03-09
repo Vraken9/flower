@@ -9,13 +9,13 @@ import { useState } from "react";
 import { useAuth } from "@/lib/contexts/auth.context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { User, Mail, Calendar, Shield, Edit2, Save, X } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     full_name: user?.full_name || '',
-    phone: user?.phone || '',
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -36,7 +36,6 @@ export default function ProfilePage() {
   const handleCancel = () => {
     setEditForm({
       full_name: user?.full_name || '',
-      phone: user?.phone || '',
     });
     setIsEditing(false);
   };
@@ -131,26 +130,6 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nomor Telepon
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        value={editForm.phone}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                        placeholder="Masukkan nomor telepon"
-                      />
-                    ) : (
-                      <p className="px-3 py-2 bg-gray-50 rounded-lg text-gray-900">
-                        {user?.phone || '-'}
-                      </p>
-                    )}
-                  </div>
-
                   {/* Role (read-only) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -170,13 +149,7 @@ export default function ProfilePage() {
                   </label>
                   <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
                     <Calendar className="h-4 w-4" />
-                    {user?.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    }) : '-'}
+                    {user?.created_at ? formatDate(user.created_at) : '-'}
                   </div>
                 </div>
               </div>

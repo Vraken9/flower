@@ -1,12 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Heart, ShoppingCart, MapPin, Store } from "lucide-react";
+import { ArrowLeft, Heart, ShoppingCart, Store, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/lib/store/cart";
+import { useAuth } from "@/lib/contexts/auth.context";
 import type { ProductWithShop } from "@/lib/types";
 
 interface ProductDetailProps {
@@ -15,6 +17,66 @@ interface ProductDetailProps {
 
 export function ProductDetail({ product }: ProductDetailProps) {
   const addItem = useCartStore((s) => s.addItem);
+  const { user } = useAuth();
+
+  // Track product view on mount
+  useEffect(() => {
+    const trackView = async () => {
+      try {
+        await fetch("/api/tracking/product-view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            product_id: product.id,
+            session_id: sessionStorage.getItem("session_id") || crypto.randomUUID(),
+          }),
+        });
+      } catch {
+        // Ignore tracking errors
+      }
+    };
+    trackView();
+  }, [product.id]);
+
+  // Handle WhatsApp checkout
+  const handleWhatsAppCheckout = async () => {
+    if (!product.shops?.whatsapp) {
+      alert("Toko ini belum menambahkan nomor WhatsApp.");
+      return;
+    }
+
+    // Track WhatsApp click
+    try {
+      await fetch("/api/tracking/whatsapp-click", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: product.id,
+          shop_id: product.shop_id,
+          session_id: sessionStorage.getItem("session_id") || crypto.randomUUID(),
+        }),
+      });
+    } catch {
+      // Ignore tracking errors
+    }
+
+    // Create WhatsApp message
+    const message = encodeURIComponent(
+      `Halo, saya tertarik dengan produk:\n\n` +
+      `*${product.name}*\n` +
+      `Harga: ${formatPrice(product.price)}\n\n` +
+      `Apakah produk ini masih tersedia?`
+    );
+
+    // Convert 08xxx to 62xxx for WhatsApp API
+    let waNumber = product.shops.whatsapp.replace(/\D/g, "");
+    if (waNumber.startsWith("08")) {
+      waNumber = "62" + waNumber.substring(1);
+    }
+
+    const whatsappUrl = `https://wa.me/${waNumber}?text=${message}`;
+    window.open(whatsappUrl, "_blank");
+  };
 
   return (
     <motion.div
@@ -92,22 +154,35 @@ export function ProductDetail({ product }: ProductDetailProps) {
             </div>
           )}
 
-          {/* Actions */}
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button
-              size="lg"
-              onClick={() => addItem(product)}
-              className="flex-1"
-            >
-              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-              Tambah ke Keranjang
-            </Button>
+          {/* Actions – hidden for admin/owner */}
+          {(!user || user.role === 'user') && (
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              {product.shops?.whatsapp ? (
+                <Button
+                  size="lg"
+                  onClick={handleWhatsAppCheckout}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  Pesan via WhatsApp
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={() => addItem(product)}
+                  className="flex-1"
+                >
+                  <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+                  Tambah ke Keranjang
+                </Button>
+              )}
 
-            <Button variant="outline" size="lg" aria-label={`Tambah ${product.name} ke favorit`}>
-              <Heart className="h-4 w-4" aria-hidden="true" />
-              Favorit
-            </Button>
-          </div>
+              <Button variant="outline" size="lg" aria-label={`Tambah ${product.name} ke favorit`}>
+                <Heart className="h-4 w-4" aria-hidden="true" />
+                Favorit
+              </Button>
+            </div>
+          )}
 
           {/* Meta */}
           <div className="mt-8 rounded-xl border border-gray-100 bg-gray-50/50 p-4">

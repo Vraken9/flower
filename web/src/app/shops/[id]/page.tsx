@@ -4,6 +4,7 @@ import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { FeaturedProducts } from "@/components/home/featured-products";
+import { ShopViewTracker } from "@/components/shop/shop-view-tracker";
 import type { Shop, ProductWithShop } from "@/lib/types";
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
 }
 
 async function getShopWithProducts(id: string) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const [shopRes, productsRes] = await Promise.all([
     supabase.from("shops").select("*").eq("id", id).single(),
@@ -30,7 +31,7 @@ async function getShopWithProducts(id: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const { data } = await supabase.from("shops").select("name").eq("id", id).single();
 
   return {
@@ -48,6 +49,9 @@ export default async function ShopDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      {/* Track Shop View */}
+      <ShopViewTracker shopId={shop.id} />
+
       {/* Shop Header */}
       <div className="mb-10 overflow-hidden rounded-3xl bg-gradient-to-br from-rose-50 to-pink-50">
         <div className="relative h-48 sm:h-64">

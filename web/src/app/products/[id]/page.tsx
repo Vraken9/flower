@@ -9,11 +9,11 @@ interface Props {
 }
 
 async function getProduct(id: string) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const { data, error } = await supabase
     .from("products")
-    .select("*, shops ( name )")
+    .select("*, shops ( name, whatsapp )")
     .eq("id", id)
     .single();
 

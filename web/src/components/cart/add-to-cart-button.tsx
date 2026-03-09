@@ -32,22 +32,25 @@ export function AddToCartButton({
   const { addItemWithAuth } = useCartStore();
   const [isAdding, setIsAdding] = useState(false);
 
+  // Hide entire button for admin/owner roles
+  if (user && (user.role === 'admin' || user.role === 'owner')) return null;
+
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (disabled || isAdding || product.stock_quantity <= 0) return;
-    
+
+    if (disabled || isAdding || product.stock <= 0) return;
+
     setIsAdding(true);
-    
+
     try {
       if (user) {
         addItemWithAuth(product, true);
         onAdd?.(product);
-        
+
         // Optional: Show success feedback
         // Could integrate with toast notification system
-        
+
       } else {
         // Redirect to login
         addItemWithAuth(product, false);
@@ -60,7 +63,7 @@ export function AddToCartButton({
   };
 
   // Check if product is out of stock
-  const isOutOfStock = product.stock_quantity <= 0;
+  const isOutOfStock = product.stock <= 0;
   const isDisabled = disabled || isOutOfStock || isAdding;
 
   // Size configurations
@@ -71,7 +74,7 @@ export function AddToCartButton({
     },
     md: {
       button: 'px-4 py-2 text-sm',
-      icon: 'h-4 w-4', 
+      icon: 'h-4 w-4',
     },
     lg: {
       button: 'px-6 py-3 text-base',
@@ -131,15 +134,15 @@ export function AddToCartButton({
           <ShoppingCart className={cn(sizeConfig[size].icon)} />
         )
       )}
-      
+
       {showText && (
         <span>{buttonText()}</span>
       )}
-      
+
       {/* Stock indicator */}
-      {product.stock_quantity < 5 && product.stock_quantity > 0 && showText && (
+      {product.stock < 5 && product.stock > 0 && showText && (
         <span className="text-xs opacity-75">
-          ({product.stock_quantity} tersisa)
+          ({product.stock} tersisa)
         </span>
       )}
     </button>

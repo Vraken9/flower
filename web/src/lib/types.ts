@@ -9,7 +9,12 @@ export interface Shop {
   description: string | null;
   location: string | null;
   image_url: string | null;
-  created_at: string;
+  created_at: string | null;
+  whatsapp: string | null;
+  instagram: string | null;
+  owner_id: string;
+  is_active: boolean;
+  updated_at: string | null;
 }
 
 export interface Product {
@@ -21,12 +26,12 @@ export interface Product {
   image_url: string | null;
   category: string | null;
   stock: number;
-  created_at: string;
+  created_at: string | null;
 }
 
 /* Joined types for queries */
 export interface ProductWithShop extends Product {
-  shops: Pick<Shop, "name"> | null;
+  shops: Pick<Shop, "name" | "whatsapp"> | null;
 }
 
 /* Cart */

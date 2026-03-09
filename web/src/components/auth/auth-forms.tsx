@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/lib/contexts/auth.context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +19,7 @@ import { Input } from '@/components/ui/input'
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -65,14 +67,33 @@ export function LoginForm() {
           placeholder="nama@email.com"
         />
 
-        <Input
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          placeholder="Min. 6 karakter"
-        />
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Min. 6 karakter"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
 
         <Button 
           type="submit" 
@@ -112,7 +133,10 @@ export function LoginForm() {
 export function RegisterForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -127,6 +151,20 @@ export function RegisterForm() {
     setLoading(true)
     setError('')
     setSuccess(false)
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok')
+      setLoading(false)
+      return
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      setError('Password minimal 6 karakter')
+      setLoading(false)
+      return
+    }
 
     const result = await register({ email, password, full_name: fullName })
 
@@ -187,15 +225,69 @@ export function RegisterForm() {
           placeholder="nama@email.com"
         />
 
-        <Input
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          placeholder="Min. 6 karakter"
-          helperText="Password minimal 6 karakter"
-        />
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Min. 6 karakter"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+          <p className="text-xs text-gray-500">Password minimal 6 karakter</p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">
+            Konfirmasi Password
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              placeholder="Ketik ulang password"
+              className={`w-full rounded-xl border bg-white px-4 py-2.5 pr-10 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:outline-none focus:ring-2 ${
+                confirmPassword && password !== confirmPassword
+                  ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                  : 'border-gray-300 focus:border-rose-400 focus:ring-rose-200'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label={showConfirmPassword ? "Sembunyikan password" : "Tampilkan password"}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+          {confirmPassword && password !== confirmPassword && (
+            <p className="text-xs text-red-600">Password tidak cocok</p>
+          )}
+        </div>
 
         <Button 
           type="submit" 

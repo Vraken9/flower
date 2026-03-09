@@ -8,15 +8,30 @@ import {
   Store,
   PlusCircle,
   ArrowLeft,
+  Users,
+  FileText,
+  Shield,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProtectedRoute } from "@/components/auth/protected-route";
+import { useAuth } from "@/lib/contexts/auth.context";
 
-const sidebarLinks = [
+// Sidebar links for owner
+const ownerLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/products", label: "Produk", icon: Package },
   { href: "/dashboard/products/new", label: "Tambah Produk", icon: PlusCircle },
   { href: "/dashboard/shop", label: "Profil Toko", icon: Store },
+];
+
+// Sidebar links for admin
+const adminLinks = [
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/shops", label: "Kelola Toko", icon: Store },
+  { href: "/dashboard/products/admin-new", label: "Tambah Produk", icon: PlusCircle },
+  { href: "/dashboard/applications", label: "Aplikasi Owner", icon: FileText },
 ];
 
 export default function DashboardLayout({
@@ -25,6 +40,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === "admin";
+  const sidebarLinks = isAdmin ? adminLinks : ownerLinks;
 
   return (
     <ProtectedRoute allowedRoles={['owner', 'admin']} requireAuth={true}>
@@ -42,7 +61,7 @@ export default function DashboardLayout({
           {/* Sidebar */}
           <aside className="w-full shrink-0 lg:w-56">
             <nav aria-label="Dashboard navigation">
-              <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+              <ul className="flex gap-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 lg:flex-col lg:overflow-visible lg:snap-none lg:pb-0">
                 {sidebarLinks.map((link) => {
                   const isActive =
                     pathname === link.href ||
@@ -50,7 +69,7 @@ export default function DashboardLayout({
                       pathname.startsWith(link.href));
 
                   return (
-                    <li key={link.href}>
+                    <li key={link.href} className="snap-start">
                       <Link
                         href={link.href}
                         className={cn(

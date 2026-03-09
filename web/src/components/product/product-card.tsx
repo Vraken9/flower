@@ -78,20 +78,22 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         </div>
       </Link>
 
-      {/* Favorite Button – optimistic toggle */}
-      <button
-        type="button"
-        onClick={handleFavoriteClick}
-        className={cn(
-          "absolute right-3 top-3 rounded-full p-2 shadow-sm backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2",
-          favorited
-            ? "bg-rose-500 text-white hover:bg-rose-600"
-            : "bg-white/80 text-gray-400 hover:bg-white hover:text-rose-500"
-        )}
-        aria-label={favorited ? `Hapus ${product.name} dari favorit` : `Tambah ${product.name} ke favorit`}
-      >
-        <Heart className={cn("h-4 w-4", favorited && "fill-current")} aria-hidden="true" />
-      </button>
+      {/* Favorite Button – optimistic toggle (hidden for admin/owner) */}
+      {(!user || user.role === 'user') && (
+        <button
+          type="button"
+          onClick={handleFavoriteClick}
+          className={cn(
+            "absolute right-3 top-3 rounded-full p-2 shadow-sm backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2",
+            favorited
+              ? "bg-rose-500 text-white hover:bg-rose-600"
+              : "bg-white/80 text-gray-400 hover:bg-white hover:text-rose-500"
+          )}
+          aria-label={favorited ? `Hapus ${product.name} dari favorit` : `Tambah ${product.name} ke favorit`}
+        >
+          <Heart className={cn("h-4 w-4", favorited && "fill-current")} aria-hidden="true" />
+        </button>
+      )}
 
       {/* Content */}
       <div className="p-4">
@@ -117,14 +119,17 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           <p className="text-base font-bold text-rose-600" style={{ fontVariantNumeric: "tabular-nums" }}>
             {formatPrice(product.price)}
           </p>
-          <button
-            type="button"
-            onClick={() => addItemWithAuth(product, !!user)}
-            className="rounded-xl bg-rose-50 p-2 text-rose-500 transition-colors hover:bg-rose-100 active:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
-            aria-label={`Tambah ${product.name} ke keranjang`}
-          >
-            <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-          </button>
+          {/* Cart button hidden for admin/owner */}
+          {(!user || user.role === 'user') && (
+            <button
+              type="button"
+              onClick={() => addItemWithAuth(product, !!user)}
+              className="rounded-xl bg-rose-50 p-2 text-rose-500 transition-colors hover:bg-rose-100 active:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
+              aria-label={`Tambah ${product.name} ke keranjang`}
+            >
+              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
     </motion.article>

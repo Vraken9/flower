@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Pencil } from "lucide-react";
+import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { DeleteProductButton } from "@/components/dashboard/delete-product-button";
@@ -11,23 +12,59 @@ export const metadata: Metadata = {
   title: "Kelola Produk",
 };
 
-async function getProducts() {
-  const supabase = createServerClient();
+async function getProductsForUser() {
+  const supabase = await createServerClient();
+
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  // Get user's profile and role
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = profile?.role === "admin";
+
+  // If admin, get all products
+  if (isAdmin) {
+    const { data } = await supabase
+      .from("products")
+      .select("*, shops ( name )")
+      .order("created_at", { ascending: false });
+    return { products: (data as ProductWithShop[]) || [], isAdmin };
+  }
+
+  // If owner, only get products from their shop
+  const { data: shop } = await supabase
+    .from("shops")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!shop) {
+    return { products: [], isAdmin: false };
+  }
 
   const { data } = await supabase
     .from("products")
     .select("*, shops ( name )")
+    .eq("shop_id", shop.id)
     .order("created_at", { ascending: false });
 
-  return (data as ProductWithShop[]) || [];
+  return { products: (data as ProductWithShop[]) || [], isAdmin: false };
 }
 
 export default async function DashboardProductsPage() {
-  const products = await getProducts();
+  const { products, isAdmin } = await getProductsForUser();
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1
           className="text-2xl font-bold text-gray-900"
           style={{ textWrap: "balance" }}
@@ -61,8 +98,8 @@ export default async function DashboardProductsPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="table-responsive">
+            <table className="w-full text-left text-sm mobile-card-table">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80">
                   <th className="px-4 py-3 font-medium text-gray-600">

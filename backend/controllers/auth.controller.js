@@ -1,11 +1,12 @@
 // ============================================
 //  AUTH CONTROLLER
-//  Register, Login, Profile
+//  Register, Login, Logout, Profile
 // ============================================
 
 const { supabaseAdmin } = require('../config/supabase')
 const { success, error } = require('../utils/response')
 const { ROLES } = require('../utils/constants')
+const { addToBlocklist } = require('../config/redis')
 
 // ──────────────────────────────────────────
 //  POST /api/auth/register
@@ -130,12 +131,14 @@ const getProfile = async (req, res) => {
 // ──────────────────────────────────────────
 //  PUT /api/auth/profile
 //  Update profil user yang sedang login
+//  Multi-role: user, owner, admin
 // ──────────────────────────────────────────
 const updateProfile = async (req, res) => {
   try {
     const { full_name, avatar_url } = req.body
     const updateData = { updated_at: new Date().toISOString() }
 
+    // Data dasar yang bisa diupdate semua role
     if (full_name) updateData.full_name = full_name
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url
 
@@ -157,4 +160,42 @@ const updateProfile = async (req, res) => {
   }
 }
 
-module.exports = { register, login, getProfile, updateProfile }
+// ──────────────────────────────────────────
+//  POST /api/auth/logout
+//  Logout dan invalidasi token via Redis blocklist
+// ──────────────────────────────────────────
+const logout = async (req, res) => {
+  try {
+    // Dapatkan token dari header (sudah diverifikasi di auth middleware)
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return error(res, 'Token tidak ditemukan.', 400)
+    }
+
+    const token = authHeader.split(' ')[1]
+
+    // Tambahkan token ke Redis blocklist
+    // TTL 24 jam (86400 detik) - sesuaikan dengan masa expired token Supabase
+    const blocked = await addToBlocklist(token, 86400)
+
+    if (!blocked) {
+      console.warn('Failed to add token to Redis blocklist, but continuing logout...')
+    }
+
+    // Opsional: Sign out user dari Supabase menggunakan user ID
+    // Ini akan invalidasi semua session user tersebut
+    try {
+      await supabaseAdmin.auth.admin.signOut(req.user.id)
+    } catch (signOutErr) {
+      // Log error tapi tetap lanjutkan karena token sudah di-block di Redis
+      console.warn('Supabase signOut warning:', signOutErr.message)
+    }
+
+    return success(res, null, 'Logout berhasil. Token telah diinvalidasi.')
+  } catch (err) {
+    console.error('Logout error:', err.message)
+    return error(res, 'Gagal melakukan logout.', 500)
+  }
+}
+
+module.exports = { register, login, logout, getProfile, updateProfile }

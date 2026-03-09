@@ -46,6 +46,7 @@ export function ProtectedRoute({
 
     // Check role requirement
     const hasValidRole = (() => {
+      if (!user) return false;
       if (requiredRole) {
         return user.role === requiredRole;
       }

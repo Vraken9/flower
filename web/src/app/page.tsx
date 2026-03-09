@@ -6,8 +6,12 @@ import { FeaturedProducts } from "@/components/home/featured-products";
 import { FeaturedShops } from "@/components/home/featured-shops";
 import type { ProductWithShop, Shop } from "@/lib/types";
 
+// Force dynamic rendering - no caching
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function getHomeData() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const [productsRes, shopsRes] = await Promise.all([
     supabase
@@ -21,6 +25,10 @@ async function getHomeData() {
       .order("created_at", { ascending: false })
       .limit(6),
   ]);
+
+  // Debug logging
+  console.log("[getHomeData] Products:", productsRes.data?.length, "Error:", productsRes.error);
+  console.log("[getHomeData] Shops:", shopsRes.data?.length, "Error:", shopsRes.error);
 
   return {
     products: (productsRes.data as ProductWithShop[]) || [],

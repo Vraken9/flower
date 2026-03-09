@@ -9,16 +9,18 @@ export interface FavoriteItem {
   product_id: string;
   products: {
     id: string;
+    shop_id: string;
     name: string;
-    description: string;
+    description: string | null;
     price: number;
-    image_url: string;
-    category: string;
-    stock_quantity: number;
+    image_url: string | null;
+    category: string | null;
+    stock: number;
+    created_at: string | null;
     shops: {
       id: string;
       name: string;
-      address: string;
+      location: string | null;
     };
   };
 }
@@ -47,19 +49,10 @@ interface FavoritesProviderProps {
 }
 
 export function FavoritesProvider({ children }: FavoritesProviderProps) {
-  const { user, loading: authLoading, getAccessToken } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Get auth headers using Supabase session token
-  const getAuthHeaders = useCallback(async () => {
-    const token = await getAccessToken();
-    return {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    };
-  }, [getAccessToken]);
 
   // Fetch favorites from Next.js API route
   const fetchFavorites = useCallback(async () => {
@@ -69,14 +62,16 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
     setError(null);
 
     try {
-      const headers = await getAuthHeaders();
-      const response = await fetch('/api/favorites', { headers });
+      // No need for Authorization header - API uses cookies via createServerClient
+      const response = await fetch('/api/favorites', {        method: 'GET',
+        credentials: 'include', // Important: send cookies
+      });
       const result = await response.json();
 
       if (response.ok) {
         setFavorites(result.data || []);
       } else {
-        setError(result.error || 'Gagal mengambil data favorit');
+        setError(result.message || 'Gagal mengambil data favorit');
       }
     } catch (err) {
       console.error('Error fetching favorites:', err);
@@ -84,7 +79,7 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, authLoading, getAuthHeaders]);
+  }, [user, authLoading]);
 
   // Refresh favorites
   const refreshFavorites = useCallback(async () => {
@@ -96,10 +91,10 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
     if (!user) throw new Error('Anda harus login untuk menambahkan favorit');
 
     try {
-      const headers = await getAuthHeaders();
       const response = await fetch('/api/favorites', {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product_id: productId }),
       });
 
@@ -107,53 +102,52 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
       if (response.ok) {
         await fetchFavorites();
       } else {
-        throw new Error(result.error || 'Gagal menambahkan ke favorit');
+        throw new Error(result.message || 'Gagal menambahkan ke favorit');
       }
     } catch (err) {
       console.error('Error adding to favorites:', err);
       throw err;
     }
-  }, [user, getAuthHeaders, fetchFavorites]);
+  }, [user, fetchFavorites]);
 
   // Remove from favorites (DELETE /api/favorites?product_id=xxx)
   const removeFromFavorites = useCallback(async (productId: string) => {
     if (!user) throw new Error('Anda harus login untuk menghapus favorit');
 
     try {
-      const headers = await getAuthHeaders();
       const response = await fetch(`/api/favorites?product_id=${productId}`, {
         method: 'DELETE',
-        headers,
+        credentials: 'include',
       });
 
       if (response.ok) {
         setFavorites(prev => prev.filter(fav => fav.product_id !== productId));
       } else {
         const result = await response.json();
-        throw new Error(result.error || 'Gagal menghapus dari favorit');
+        throw new Error(result.message || 'Gagal menghapus dari favorit');
       }
     } catch (err) {
       console.error('Error removing from favorites:', err);
       throw err;
     }
-  }, [user, getAuthHeaders]);
+  }, [user]);
 
   // Toggle favorite status (POST /api/favorites returns action: "added"|"removed")
   const toggleFavorite = useCallback(async (productId: string) => {
     if (!user) throw new Error('Anda harus login untuk mengubah favorit');
 
     try {
-      const headers = await getAuthHeaders();
       const response = await fetch('/api/favorites', {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product_id: productId }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        if (result.action === 'added') {
+        if (result.data.action === 'added') {
           await fetchFavorites();
         } else {
           setFavorites(prev => prev.filter(fav => fav.product_id !== productId));
@@ -165,7 +159,7 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
       console.error('Error toggling favorite:', err);
       throw err;
     }
-  }, [user, getAuthHeaders, fetchFavorites]);
+  }, [user, fetchFavorites]);
 
   // Check if product is favorited
   const isFavorited = useCallback((productId: string) => {

@@ -44,13 +44,14 @@ export function ProductForm({ shops, product }: ProductFormProps) {
     setError(null);
 
     try {
-      // TODO: Replace with server action when backend is ready
+      // Use owner API endpoints
       const apiUrl = isEditing
-        ? `http://localhost:3000/api/admin/products/${product.id}`
-        : "http://localhost:3000/api/admin/products";
+        ? `/api/owner/products/${product.id}`
+        : "/api/owner/products";
 
       const res = await fetch(apiUrl, {
         method: isEditing ? "PUT" : "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
@@ -65,7 +66,7 @@ export function ProductForm({ shops, product }: ProductFormProps) {
         router.push("/dashboard/products");
         router.refresh();
       } else {
-        setError("Gagal menyimpan produk. Silakan coba lagi.");
+        setError(result.message || "Gagal menyimpan produk. Silakan coba lagi.");
       }
     } catch {
       setError("Terjadi kesalahan. Pastikan server backend aktif.");

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { requireRole, AuthError } from "@/lib/api/auth-guard";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/supabase/server";
 
 /**
  * POST /api/applications/[id]/review
@@ -21,15 +19,41 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const admin = await requireRole(request, ["admin"]);
-    const { id } = await params;
-    const token = request.headers.get("authorization")!.slice(7);
+    const supabase = await createServerClient();
+    
+    // Get authenticated user
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    );
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("[POST /api/applications/[id]/review] Profile error:", profileError);
+      return NextResponse.json(
+        { success: false, message: "Failed to fetch user profile" },
+        { status: 500 }
+      );
+    }
+
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json(
+        { success: false, message: "Forbidden – admin only" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
 
     const body = await request.json();
     const { action, rejection_reason } = body;
@@ -67,13 +91,14 @@ export async function POST(
         .from("applications")
         .update({
           status: "rejected",
-          reviewed_by: admin.id,
+          reviewed_by: authUser.id,
           reviewed_at: new Date().toISOString(),
           rejection_reason: rejection_reason || null,
         })
         .eq("id", id);
 
       if (error) {
+        console.error("[POST /api/applications/[id]/review] Reject error:", error);
         return NextResponse.json(
           { success: false, message: error.message },
           { status: 500 }
@@ -94,7 +119,7 @@ export async function POST(
       .from("applications")
       .update({
         status: "approved",
-        reviewed_by: admin.id,
+        reviewed_by: authUser.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -126,6 +151,7 @@ export async function POST(
       name: application.shop_name,
       description: application.shop_description,
       location: application.shop_location,
+      whatsapp: application.whatsapp,
       is_active: true,
     });
 
@@ -138,15 +164,10 @@ export async function POST(
       success: true,
       message: "Application approved – user promoted to owner",
     });
-  } catch (err) {
-    if (err instanceof AuthError) {
-      return NextResponse.json(
-        { success: false, message: err.message },
-        { status: err.status }
-      );
-    }
+  } catch (error) {
+    console.error("[POST /api/applications/[id]/review] Exception:", error);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

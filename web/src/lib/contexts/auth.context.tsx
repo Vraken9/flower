@@ -126,7 +126,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password: data.password,
       })
 
-      if (error) return { success: false, message: error.message }
+      if (error) {
+        // Customize error messages for better UX
+        if (error.message.includes('Email not confirmed')) {
+          return { 
+            success: false, 
+            message: 'Email belum dikonfirmasi. Silakan cek inbox email Anda untuk link konfirmasi, atau hubungi admin jika ada masalah.' 
+          }
+        }
+        if (error.message.includes('Invalid login credentials')) {
+          return { success: false, message: 'Email atau password salah. Silakan coba lagi.' }
+        }
+        return { success: false, message: error.message }
+      }
 
       if (result.user) {
         // Ensure profile row exists
@@ -163,10 +175,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: result, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        options: { data: { full_name: data.full_name } },
+        options: { 
+          data: { full_name: data.full_name },
+          emailRedirectTo: `${window.location.origin}/auth/login`
+        },
       })
 
-      if (error) return { success: false, message: error.message }
+      if (error) {
+        // Customize error messages
+        if (error.message.includes('rate limit')) {
+          return { success: false, message: 'Terlalu banyak percobaan registrasi. Silakan coba lagi nanti.' }
+        }
+        return { success: false, message: error.message }
+      }
 
       // Ensure profile row
       if (result.user) {
@@ -177,7 +198,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
       }
 
-      return { success: true, message: 'Registrasi berhasil! Silakan cek email untuk konfirmasi.' }
+      // Check if email confirmation is disabled (user can login immediately)
+      const needsConfirmation = result.user?.identities?.length === 0
+      
+      return { 
+        success: true, 
+        message: needsConfirmation 
+          ? 'Registrasi berhasil! Silakan cek email untuk konfirmasi akun Anda.' 
+          : 'Registrasi berhasil! Anda sekarang dapat login dengan akun baru Anda.'
+      }
     } catch (error) {
       console.error('Register error:', error)
       return { success: false, message: 'Terjadi kesalahan saat registrasi' }

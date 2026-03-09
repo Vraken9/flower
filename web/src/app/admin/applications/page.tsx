@@ -35,9 +35,7 @@ export default function AdminApplicationsPage() {
     if (!session) return;
     try {
       const res = await fetch("/api/applications", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        credentials: "include",
       });
       const data = await res.json();
       if (data.success) setApplications(data.data || []);
@@ -57,9 +55,9 @@ export default function AdminApplicationsPage() {
     try {
       const res = await fetch(`/api/applications/${id}/review`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ action, rejection_reason: rejectionReason }),
       });

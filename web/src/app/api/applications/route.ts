@@ -1,38 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getAuthUser, requireRole, AuthError } from "@/lib/api/auth-guard";
+import { createServerClient } from "@/lib/supabase/server";
 
 /**
- * GET  /api/applications        → List own applications (user) or all (admin)
- * POST /api/applications        → Submit a new owner application
+ * GET  /api/applications → List own applications (user) or all (admin)
+ * POST /api/applications → Submit a new owner application
  */
-
-function supabaseWithToken(token: string) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
-}
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const supabase = await createServerClient();
+    
+    // Get authenticated user with profile
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
+    // Get user role from profile
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("[GET /api/applications] Profile error:", profileError);
+      return NextResponse.json(
+        { success: false, message: "Failed to fetch user profile" },
+        { status: 500 }
+      );
+    }
+
+    const userRole = profile?.role || "user";
 
     let query = supabase.from("applications").select("*");
 
     // Admins see all, users see only their own (RLS handles this too)
-    if (user.role !== "admin") {
-      query = query.eq("user_id", user.id);
+    if (userRole !== "admin") {
+      query = query.eq("user_id", authUser.id);
     }
 
     const { data, error } = await query.order("created_at", {
@@ -40,6 +49,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
+      console.error("[GET /api/applications] Supabase error:", error);
       return NextResponse.json(
         { success: false, message: error.message },
         { status: 500 }
@@ -47,9 +57,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data });
-  } catch {
+  } catch (error) {
+    console.error("[GET /api/applications] Exception:", error);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
@@ -57,27 +68,45 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const supabase = await createServerClient();
+    
+    // Get authenticated user with profile
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
 
+    // Get user role from profile
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("[POST /api/applications] Profile error:", profileError);
+      return NextResponse.json(
+        { success: false, message: "Failed to fetch user profile" },
+        { status: 500 }
+      );
+    }
+
+    const userRole = profile?.role || "user";
+
     // Only 'user' role can apply (owners/admins already have elevated roles)
-    if (user.role !== "user") {
+    if (userRole !== "user") {
       return NextResponse.json(
         { success: false, message: "You already have an elevated role" },
         { status: 400 }
       );
     }
 
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
-
     const body = await request.json();
-    const { shop_name, shop_description, shop_location, motivation } = body;
+    const { shop_name, shop_description, shop_location, motivation, whatsapp } = body;
 
     if (!shop_name) {
       return NextResponse.json(
@@ -86,13 +115,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!whatsapp) {
+      return NextResponse.json(
+        { success: false, message: "WhatsApp number is required" },
+        { status: 400 }
+      );
+    }
+
     // Check for existing pending application
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("applications")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", authUser.id)
       .eq("status", "pending")
-      .single();
+      .maybeSingle();
+
+    // If there's an error (not "not found"), return it
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error("[POST /api/applications] Check existing error:", existingError);
+      return NextResponse.json(
+        { success: false, message: existingError.message },
+        { status: 500 }
+      );
+    }
 
     if (existing) {
       return NextResponse.json(
@@ -107,16 +152,18 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("applications")
       .insert({
-        user_id: user.id,
+        user_id: authUser.id,
         shop_name,
         shop_description: shop_description || null,
         shop_location: shop_location || null,
         motivation: motivation || null,
+        whatsapp: whatsapp || null,
       })
       .select()
       .single();
 
     if (error) {
+      console.error("[POST /api/applications] Supabase error:", error);
       return NextResponse.json(
         { success: false, message: error.message },
         { status: 500 }
@@ -127,9 +174,10 @@ export async function POST(request: NextRequest) {
       { success: true, data, message: "Application submitted" },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    console.error("[POST /api/applications] Exception:", error);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
