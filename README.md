@@ -1,238 +1,310 @@
-# Bloom – Flower Marketplace
+# 🌸 Bloom – Flower Marketplace
 
-A full-stack flower marketplace with role-based access control, built with **Next.js 16** (App Router) and **Supabase** (PostgreSQL + Auth).
+A full-stack flower marketplace with role-based access control. Available in **two deployment versions**:
 
-## Architecture
+1. **Supabase Version** - Using Supabase Cloud (simpler, managed)
+2. **Self-Hosted Version** - Using your own PostgreSQL + Express backend (full control)
 
+## 🏗️ Architecture Options
+
+### Option A: Supabase (Managed)
 ```
 ┌──────────────────────────────────────────────────┐
 │  Next.js 16  (web/)                              │
 │  ┌──────────┐  ┌───────────┐  ┌───────────────┐  │
-│  │  Pages    │  │ API Routes│  │ Contexts      │  │
-│  │  (SSR)    │  │ /api/*    │  │ Auth,Favorites│  │
+│  │  Pages   │  │ API Routes│  │ Contexts      │  │
+│  │  (SSR)   │  │ /api/*    │  │ Auth,Favorites│  │
 │  └──────────┘  └─────┬─────┘  └───────────────┘  │
-│                      │                            │
 └──────────────────────┼────────────────────────────┘
-                       │  Supabase JS Client
+                       │ Supabase JS Client
                        ▼
           ┌────────────────────────┐
           │   Supabase Cloud       │
           │  ┌──────┐ ┌────────┐   │
-          │  │ Auth │ │ Postgres│   │
+          │  │ Auth │ │ Postgres│  │
           │  └──────┘ └────────┘   │
-          │   RLS policies active  │
           └────────────────────────┘
 ```
 
-## Tech Stack
-
-| Layer     | Technology                  |
-| --------- | --------------------------- |
-| Frontend  | Next.js 16, React, Tailwind CSS |
-| Auth      | Supabase Auth (JWT)         |
-| Database  | Supabase PostgreSQL + RLS   |
-| State     | Zustand (cart), React Context (auth, favorites) |
-| Testing   | Vitest (unit + integration) |
-| CI        | GitHub Actions              |
-
-## Roles & Permissions
-
-| Role    | Can do                                              |
-| ------- | --------------------------------------------------- |
-| `user`  | Browse, purchase, manage cart/favorites, apply to become owner |
-| `owner` | Everything user can + manage own shop & products    |
-| `admin` | Everything + manage all shops, review owner applications |
-
-## Project Structure
-
+### Option B: Self-Hosted (Full Control)
 ```
-├── web/                        # Next.js frontend
-│   ├── src/app/                # App Router pages
-│   │   ├── page.tsx            # Home
-│   │   ├── products/           # Product listing & detail
-│   │   ├── shops/              # Shop listing & detail
-│   │   ├── cart/               # Shopping cart
-│   │   ├── favorites/          # Favorites list
-│   │   ├── auth/               # Login & Register
-│   │   ├── profile/            # User profile
-│   │   ├── dashboard/          # Owner dashboard (shop, products)
-│   │   ├── apply-owner/        # Owner application form
-│   │   ├── admin/              # Admin dashboard & applications
-│   │   └── api/                # API Routes
-│   │       ├── profile/ensure/ # POST – ensure profile row
-│   │       ├── owner/products/ # GET/POST/PUT/DELETE owner CRUD
-│   │       ├── admin/shops/    # POST toggle shop active
-│   │       ├── cart/           # GET/POST/DELETE cart items
-│   │       ├── favorites/      # GET/POST/DELETE favorites (toggle)
-│   │       └── applications/   # GET/POST + [id]/review
-│   ├── src/lib/
-│   │   ├── contexts/           # AuthProvider, FavoritesProvider
-│   │   ├── supabase/           # Browser & server Supabase clients
-│   │   ├── store/              # Zustand cart store
-│   │   └── types/              # TypeScript type definitions
-│   └── src/components/         # Shared UI components
-├── supabase/migrations/        # SQL migrations & rollback
-│   ├── 001_create_roles_profiles_shops_products.sql
-│   ├── 002_enable_rls_and_policies.sql
-│   ├── 003_owner_onboarding_applications.sql
-│   └── rollback_001_002.sql
-├── scripts/dummy-photos.mjs    # Seed product/shop images
-└── .github/workflows/ci.yml    # CI pipeline
+┌─────────────────────────────────────────────────────────┐
+│                      Your VPS                            │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │                    Nginx                           │  │
+│  │                 (Port 80/443)                      │  │
+│  └─────────────────────┬─────────────────────────────┘  │
+│            ┌───────────┴───────────┐                    │
+│            ▼                       ▼                    │
+│  ┌─────────────────┐     ┌─────────────────┐           │
+│  │   Frontend      │     │    Backend      │           │
+│  │   Next.js       │────▶│    Express.js   │           │
+│  │   Port 3000     │     │    Port 5000    │           │
+│  └─────────────────┘     └────────┬────────┘           │
+│                                   │                     │
+│                          ┌────────▼────────┐           │
+│                          │   PostgreSQL    │           │
+│                          │   Port 5432     │           │
+│                          └─────────────────┘           │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Getting Started
+## 🛠️ Tech Stack
+
+| Component | Supabase Version | Self-Hosted Version |
+|-----------|-----------------|---------------------|
+| Frontend | Next.js 16, React, Tailwind | Same |
+| Backend | Next.js API Routes | Express.js |
+| Database | Supabase PostgreSQL | PostgreSQL 16 |
+| Auth | Supabase Auth | JWT + bcrypt |
+| Security | RLS Policies | Middleware |
+| Hosting | 1 server | 1 server (all in one) |
+
+## 👥 Roles & Permissions
+
+| Role | Capabilities |
+|------|-------------|
+| `user` | Browse, cart, favorites, apply to become owner |
+| `owner` | + Manage own shop & products |
+| `admin` | + Manage all shops, review applications |
+
+## 📁 Project Structure
+
+```
+├── web/                    # Next.js Frontend
+│   ├── src/app/            # Pages (App Router)
+│   ├── src/components/     # UI Components
+│   ├── src/lib/            # Utils, contexts, types
+│   └── Dockerfile
+├── backend/                # Express.js Backend (self-hosted)
+│   ├── routes/             # API endpoints
+│   ├── controllers/        # Business logic
+│   ├── middlewares/        # Auth, validation
+│   └── Dockerfile
+├── database/               # PostgreSQL schema (self-hosted)
+├── nginx/                  # Reverse proxy config
+├── supabase/               # Supabase migrations
+├── docker-compose.supabase.yml     # Deploy with Supabase
+└── docker-compose.selfhosted.yml   # Deploy self-hosted
+```
+
+---
+
+## 🚀 Quick Start (Development)
 
 ### Prerequisites
-
 - Node.js 18+
-- A Supabase project
+- npm or yarn
 
-### 1. Clone & install
-
-```bash
-git clone <repo-url>
-cd Flower_Marketplace
-cd web && npm install
-```
-
-### 2. Configure environment
-
-Create `web/.env.local`:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-### 3. Run migrations
-
-Execute the SQL files in `supabase/migrations/` against your Supabase project in order (001, 002, 003) via the Supabase SQL Editor or CLI.
-
-### 4. Seed images (optional)
-
-```bash
-node scripts/dummy-photos.mjs --dry-run   # preview
-node scripts/dummy-photos.mjs             # apply
-```
-
-### 5. Start dev server
-
-```bash
-cd web
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-## Test Accounts
-
-| Email                        | Password       | Role  |
-| ---------------------------- | -------------- | ----- |
-| admin@flowermarket.com       | admin123456    | admin |
-| owner.edelweis@gmail.com     | owner123456    | owner |
-| buyer@gmail.com              | buyer123456    | user  |
-
-## Docker Deployment (VPS)
-
-### Prerequisites
-- Docker 20+ or Podman 4+
-- docker-compose or podman-compose
-
-### 1. Clone & configure
-
+### 1. Clone & Install
 ```bash
 git clone https://github.com/your-username/flower-marketplace.git
-cd flower-marketplace
-cp .env.example .env
-# Edit .env with your Supabase credentials
-nano .env
+cd flower-marketplace/web
+npm install
 ```
 
-### 2. Build & run
-
+### 2. Configure Environment
 ```bash
-# Using Docker
-docker-compose up -d --build
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
+```
 
-# Using Podman
-podman-compose up -d --build
+### 3. Run Development Server
+```bash
+npm run dev
+```
+Open http://localhost:3000
+
+---
+
+## 🐳 Deploy: Supabase Version
+
+Best for: Quick setup, managed infrastructure, auto-scaling.
+
+### 1. Setup Supabase
+- Create project at [supabase.com](https://supabase.com)
+- Run migrations in `supabase/migrations/` via SQL Editor
+
+### 2. Configure & Deploy
+```bash
+cp .env.example .env
+# Edit .env with Supabase credentials
+
+docker-compose -f docker-compose.supabase.yml up -d --build
 ```
 
 ### 3. Access
-Open `http://your-vps-ip:3000`
+Open http://your-server-ip:3000
 
-### Common commands
+---
+
+## 🖥️ Deploy: Self-Hosted Version
+
+Best for: Full control, no vendor lock-in, predictable costs.
+
+### 1. Configure Environment
+```bash
+cp .env.selfhosted.example .env
+nano .env  # Edit with secure passwords
+```
+
+### 2. Build & Run
+```bash
+docker-compose -f docker-compose.selfhosted.yml up -d --build
+```
+
+### 3. Access
+- Frontend: http://your-server-ip (via Nginx)
+- Backend API: http://your-server-ip/api
+- Direct ports: Frontend :3000, Backend :5000, DB :5432
+
+### 4. Database Management
+```bash
+# Connect to PostgreSQL
+docker exec -it flower_db psql -U flower_user -d flower_marketplace
+
+# View tables
+\dt
+
+# View users
+SELECT id, email, role FROM users;
+```
+
+---
+
+## 📋 Common Docker Commands
 
 ```bash
+# Start in background
+docker-compose -f docker-compose.selfhosted.yml up -d
+
 # View logs
-docker-compose logs -f
+docker-compose -f docker-compose.selfhosted.yml logs -f
 
-# Restart
-docker-compose restart
+# View specific service logs
+docker-compose -f docker-compose.selfhosted.yml logs -f backend
 
-# Stop
-docker-compose down
+# Restart services
+docker-compose -f docker-compose.selfhosted.yml restart
+
+# Stop all
+docker-compose -f docker-compose.selfhosted.yml down
 
 # Rebuild after code changes
-docker-compose up -d --build
+docker-compose -f docker-compose.selfhosted.yml up -d --build
+
+# Remove everything including volumes (⚠️ deletes data!)
+docker-compose -f docker-compose.selfhosted.yml down -v
 ```
 
-### Production with Nginx (recommended)
+---
 
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
+## 🔐 Test Accounts
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
+| Email | Password | Role |
+|-------|----------|------|
+| admin@flowermarket.com | admin123456 | admin |
+| owner.edelweis@gmail.com | owner123456 | owner |
+| buyer@gmail.com | buyer123456 | user |
 
-## API Routes
+---
 
-| Method   | Endpoint                        | Auth    | Description                     |
-| -------- | ------------------------------- | ------- | ------------------------------- |
-| POST     | `/api/profile/ensure`           | —       | Upsert profile after signup     |
-| GET      | `/api/owner/products`           | owner   | List owner's products           |
-| POST     | `/api/owner/products`           | owner   | Create product                  |
-| PUT      | `/api/owner/products/[id]`      | owner   | Update product                  |
-| DELETE   | `/api/owner/products/[id]`      | owner   | Delete product                  |
-| POST     | `/api/admin/shops/[id]/disable` | admin   | Toggle shop is_active           |
-| GET      | `/api/cart`                     | any     | List cart items                 |
-| POST     | `/api/cart`                     | any     | Add / increment cart item       |
-| DELETE   | `/api/cart?product_id=x`        | any     | Remove cart item                |
-| GET      | `/api/favorites`                | any     | List favorites                  |
-| POST     | `/api/favorites`                | any     | Toggle favorite (add/remove)    |
-| DELETE   | `/api/favorites?product_id=x`   | any     | Remove favorite                 |
-| GET      | `/api/applications`             | any     | List applications (own/all)     |
-| POST     | `/api/applications`             | user    | Submit owner application        |
-| POST     | `/api/applications/[id]/review` | admin   | Approve / reject application    |
+## 🌐 Production Checklist
 
-## Running Tests
+### Security
+- [ ] Change default passwords in `.env`
+- [ ] Generate secure JWT_SECRET (min 32 chars)
+- [ ] Enable HTTPS with SSL certificate
+- [ ] Configure firewall (only expose 80, 443)
+
+### Performance
+- [ ] Enable Nginx gzip compression
+- [ ] Set up CDN for static assets
+- [ ] Configure PostgreSQL connection pooling
+
+### Monitoring
+- [ ] Set up health check endpoint monitoring
+- [ ] Configure log rotation
+- [ ] Set up database backups
+
+---
+
+## 🔀 Switching Between Versions
+
+### From Supabase to Self-Hosted
+1. Export data from Supabase
+2. Import to self-hosted PostgreSQL
+3. Update frontend to call `/api` instead of Supabase client
+4. Deploy with `docker-compose.selfhosted.yml`
+
+### From Self-Hosted to Supabase
+1. Set up Supabase project
+2. Run migrations
+3. Migrate data
+4. Update environment variables
+5. Deploy with `docker-compose.supabase.yml`
+
+---
+
+## 📝 API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | — | Register new user |
+| POST | `/api/auth/login` | — | Login |
+| GET | `/api/products` | — | List products |
+| GET | `/api/products/:id` | — | Product detail |
+| GET | `/api/shops` | — | List shops |
+| GET | `/api/cart` | ✓ | Get user cart |
+| POST | `/api/cart` | ✓ | Add to cart |
+| DELETE | `/api/cart/:id` | ✓ | Remove from cart |
+| GET | `/api/favorites` | ✓ | Get favorites |
+| POST | `/api/favorites` | ✓ | Toggle favorite |
+| GET | `/api/owner/products` | owner | List own products |
+| POST | `/api/owner/products` | owner | Create product |
+| PUT | `/api/owner/products/:id` | owner | Update product |
+| DELETE | `/api/owner/products/:id` | owner | Delete product |
+| GET | `/api/admin/stats` | admin | Dashboard stats |
+| POST | `/api/applications` | user | Apply for owner |
+| POST | `/api/applications/:id/review` | admin | Review application |
+
+---
+
+## 🧪 Testing
 
 ```bash
 cd web
-npm test              # unit tests (mocked)
-npm run test:integration  # integration tests (needs live Supabase)
+npm test                    # Unit tests
+npm run test:integration    # Integration tests
 ```
 
-## CI Pipeline
+---
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
+## ⚡ Performance Comparison
 
-1. **Lint & Typecheck** – `next lint` + `tsc --noEmit`
-2. **Unit Tests** – Vitest with mocked Supabase
-3. **Build** – `next build`
-4. **Integration Tests** – against staging Supabase (main branch only)
+| Aspect | Supabase | Self-Hosted |
+|--------|----------|-------------|
+| Setup Time | ~30 min | ~2 hours |
+| Monthly Cost* | $0-25 | $5-20 (VPS) |
+| Scaling | Auto | Manual |
+| Control | Limited | Full |
+| Vendor Lock-in | Yes | No |
+| Maintenance | Managed | Self |
 
-## License
+*Estimated for small-medium traffic
+
+---
+
+## 📄 License
 
 MIT
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open a Pull Request
