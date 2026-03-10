@@ -39,3 +39,6 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+# archived empty folder (locked by OS, safe to delete later)
+2-selfhosted-version/
