@@ -7,8 +7,8 @@
 #   Nginx (80/443) → Frontend (3000) → Backend (5000) → PostgreSQL (5432)
 #
 # Usage:
-#   cp .env.selfhosted.example .env
-#   docker-compose -f docker-compose.selfhosted.yml up -d --build
+#   cp .env.example .env
+#   docker-compose up -d --build
 #
 
 services:
@@ -59,7 +59,7 @@ services:
   # ========== FRONTEND ==========
   frontend:
     build:
-      context: ./web
+      context: ../web
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://backend:5000

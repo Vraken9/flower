@@ -1,15 +1,15 @@
-# 📖 Panduan Deploy Flower Marketplace
+#  Panduan Deploy Flower Marketplace
 
 Dokumen ini menjelaskan langkah-langkah detail untuk deploy aplikasi Flower Marketplace ke VPS. Ada **dua pilihan** deployment:
 
 | Pilihan | Cocok Untuk | Kesulitan | Biaya |
 |---------|-------------|-----------|-------|
-| **Supabase** | Pemula, MVP, startup | ⭐ Mudah | $0-25/bulan |
-| **Self-Hosted** | Developer berpengalaman, kontrol penuh | ⭐⭐⭐ Menengah | $5-20/bulan (VPS) |
+| **Supabase** | Pemula, MVP, startup |  Mudah | $0-25/bulan |
+| **Self-Hosted** | Developer berpengalaman, kontrol penuh |  Menengah | $5-20/bulan (VPS) |
 
 ---
 
-## 📋 Daftar Isi
+##  Daftar Isi
 
 1. [Prasyarat](#-prasyarat)
 2. [Opsi A: Deploy dengan Supabase](#-opsi-a-deploy-dengan-supabase)
@@ -20,7 +20,7 @@ Dokumen ini menjelaskan langkah-langkah detail untuk deploy aplikasi Flower Mark
 
 ---
 
-## 🔧 Prasyarat
+##  Prasyarat
 
 ### Kebutuhan VPS
 - **OS**: Ubuntu 20.04+ atau Debian 11+
@@ -58,7 +58,7 @@ git --version          # git version 2.x+
 
 ---
 
-## ☁️ OPSI A: Deploy dengan Supabase
+##  OPSI A: Deploy dengan Supabase
 
 **Arsitektur:**
 ```
@@ -158,13 +158,13 @@ curl http://localhost:3000
 http://YOUR_VPS_IP:3000
 ```
 
-### ✅ Selesai untuk Supabase!
+###  Selesai untuk Supabase!
 
 Aplikasi berjalan di `http://YOUR_VPS_IP:3000`
 
 ---
 
-## 🖥️ OPSI B: Deploy Self-Hosted
+##  OPSI B: Deploy Self-Hosted
 
 **Arsitektur:**
 ```
@@ -303,11 +303,11 @@ http://YOUR_VPS_IP
 http://YOUR_VPS_IP/api
 ```
 
-### ✅ Selesai untuk Self-Hosted!
+###  Selesai untuk Self-Hosted!
 
 ---
 
-## 🔒 Setup Domain & SSL
+##  Setup Domain & SSL
 
 ### Langkah 1: Pointing Domain
 
@@ -507,7 +507,7 @@ docker volume prune -f
 
 ---
 
-## 📊 Perbandingan Kedua Opsi
+##  Perbandingan Kedua Opsi
 
 | Aspek | Supabase | Self-Hosted |
 |-------|----------|-------------|
@@ -536,7 +536,7 @@ docker volume prune -f
 
 ---
 
-## ❓ FAQ
+##  FAQ
 
 **Q: Bisa switch dari Supabase ke Self-Hosted?**
 A: Ya, tapi perlu migrasi data. Export dari Supabase, import ke PostgreSQL lokal.
@@ -552,7 +552,7 @@ A: Supabase punya Storage. Self-hosted bisa pakai folder lokal atau S3-compatibl
 
 ---
 
-## 📞 Bantuan
+##  Bantuan
 
 Jika mengalami masalah:
 

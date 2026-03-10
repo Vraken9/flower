@@ -1,11 +1,11 @@
-# 🌸 Bloom – Flower Marketplace
+#  Bloom – Flower Marketplace
 
 A full-stack flower marketplace with role-based access control. Available in **two deployment versions**:
 
 1. **Supabase Version** - Using Supabase Cloud (simpler, managed)
 2. **Self-Hosted Version** - Using your own PostgreSQL + Express backend (full control)
 
-## 🏗️ Architecture Options
+##  Architecture Options
 
 ### Option A: Supabase (Managed)
 ```
@@ -49,7 +49,7 @@ A full-stack flower marketplace with role-based access control. Available in **t
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Component | Supabase Version | Self-Hosted Version |
 |-----------|-----------------|---------------------|
@@ -60,7 +60,7 @@ A full-stack flower marketplace with role-based access control. Available in **t
 | Security | RLS Policies | Middleware |
 | Hosting | 1 server | 1 server (all in one) |
 
-## 👥 Roles & Permissions
+##  Roles & Permissions
 
 | Role | Capabilities |
 |------|-------------|
@@ -68,29 +68,41 @@ A full-stack flower marketplace with role-based access control. Available in **t
 | `owner` | + Manage own shop & products |
 | `admin` | + Manage all shops, review applications |
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
-├── web/                    # Next.js Frontend
-│   ├── src/app/            # Pages (App Router)
-│   ├── src/components/     # UI Components
-│   ├── src/lib/            # Utils, contexts, types
+├── web/                          # Frontend (SHARED — selalu edit di sini)
+│   ├── src/app/                  # Pages (App Router)
+│   ├── src/components/           # UI Components
+│   ├── src/lib/                  # Utils, contexts, types
 │   └── Dockerfile
-├── backend/                # Express.js Backend (self-hosted)
-│   ├── routes/             # API endpoints
-│   ├── controllers/        # Business logic
-│   ├── middlewares/        # Auth, validation
-│   └── Dockerfile
-├── database/               # PostgreSQL schema (self-hosted)
-├── nginx/                  # Reverse proxy config
-├── supabase/               # Supabase migrations
-├── docker-compose.supabase.yml     # Deploy with Supabase
-└── docker-compose.selfhosted.yml   # Deploy self-hosted
+│
+├── 1-supabase-version/           # 🟢 Config Supabase (simpler)
+│   ├── supabase/                 # SQL migrations
+│   ├── docker-compose.yml        # Deploy with Supabase
+│   ├── .env.example
+│   ├── run-dev.bat               # Double-click to run
+│   └── README.md
+│
+├── 2-selfhosted-version/         # 🔵 Full stack (no vendor lock-in)
+│   ├── backend/                  # Express.js API
+│   ├── database/                 # PostgreSQL schema
+│   ├── nginx/                    # Reverse proxy
+│   ├── docker-compose.yml        # Deploy self-hosted
+│   ├── .env.example
+│   ├── run-docker.bat            # Double-click to run
+│   └── README.md
+│
+├── ARCHITECTURE_EXPLAINED.md     # Penjelasan arsitektur (ID)
+└── DEPLOY_GUIDE.md               # Panduan deploy lengkap
 ```
+
+> **💡 Kode frontend (`web/`) hanya ada SATU.** Kedua versi berbagi folder yang sama.
+> Jika kamu fix bug di `web/`, perbaikan langsung berlaku untuk kedua versi.
 
 ---
 
-## 🚀 Quick Start (Development)
+##  Quick Start (Development)
 
 ### Prerequisites
 - Node.js 18+
@@ -111,26 +123,30 @@ cp .env.example .env.local
 
 ### 3. Run Development Server
 ```bash
+cd web
 npm run dev
 ```
 Open http://localhost:3000
 
+> Or just double-click `1-supabase-version/run-dev.bat`
+
 ---
 
-## 🐳 Deploy: Supabase Version
+##  Deploy: Supabase Version
 
 Best for: Quick setup, managed infrastructure, auto-scaling.
 
 ### 1. Setup Supabase
 - Create project at [supabase.com](https://supabase.com)
-- Run migrations in `supabase/migrations/` via SQL Editor
+- Run migrations in `1-supabase-version/supabase/migrations/` via SQL Editor
 
 ### 2. Configure & Deploy
 ```bash
+cd 1-supabase-version
 cp .env.example .env
 # Edit .env with Supabase credentials
 
-docker-compose -f docker-compose.supabase.yml up -d --build
+docker-compose up -d --build
 ```
 
 ### 3. Access
@@ -144,13 +160,14 @@ Best for: Full control, no vendor lock-in, predictable costs.
 
 ### 1. Configure Environment
 ```bash
-cp .env.selfhosted.example .env
+cd 2-selfhosted-version
+cp .env.example .env
 nano .env  # Edit with secure passwords
 ```
 
 ### 2. Build & Run
 ```bash
-docker-compose -f docker-compose.selfhosted.yml up -d --build
+docker-compose up -d --build
 ```
 
 ### 3. Access
@@ -172,34 +189,35 @@ SELECT id, email, role FROM users;
 
 ---
 
-## 📋 Common Docker Commands
+##  Common Docker Commands
 
 ```bash
 # Start in background
-docker-compose -f docker-compose.selfhosted.yml up -d
+cd 2-selfhosted-version
+docker-compose up -d
 
 # View logs
-docker-compose -f docker-compose.selfhosted.yml logs -f
+docker-compose logs -f
 
 # View specific service logs
-docker-compose -f docker-compose.selfhosted.yml logs -f backend
+docker-compose logs -f backend
 
 # Restart services
-docker-compose -f docker-compose.selfhosted.yml restart
+docker-compose restart
 
 # Stop all
-docker-compose -f docker-compose.selfhosted.yml down
+docker-compose down
 
 # Rebuild after code changes
-docker-compose -f docker-compose.selfhosted.yml up -d --build
+docker-compose up -d --build
 
 # Remove everything including volumes (⚠️ deletes data!)
-docker-compose -f docker-compose.selfhosted.yml down -v
+docker-compose down -v
 ```
 
 ---
 
-## 🔐 Test Accounts
+##  Test Accounts
 
 | Email | Password | Role |
 |-------|----------|------|
@@ -209,7 +227,7 @@ docker-compose -f docker-compose.selfhosted.yml down -v
 
 ---
 
-## 🌐 Production Checklist
+##  Production Checklist
 
 ### Security
 - [ ] Change default passwords in `.env`
@@ -229,24 +247,24 @@ docker-compose -f docker-compose.selfhosted.yml down -v
 
 ---
 
-## 🔀 Switching Between Versions
+##  Switching Between Versions
 
 ### From Supabase to Self-Hosted
 1. Export data from Supabase
 2. Import to self-hosted PostgreSQL
 3. Update frontend to call `/api` instead of Supabase client
-4. Deploy with `docker-compose.selfhosted.yml`
+4. Deploy with `2-selfhosted-version/docker-compose.yml`
 
 ### From Self-Hosted to Supabase
 1. Set up Supabase project
 2. Run migrations
 3. Migrate data
 4. Update environment variables
-5. Deploy with `docker-compose.supabase.yml`
+5. Deploy with `1-supabase-version/docker-compose.yml`
 
 ---
 
-## 📝 API Endpoints
+##  API Endpoints
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
@@ -270,7 +288,7 @@ docker-compose -f docker-compose.selfhosted.yml down -v
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 ```bash
 cd web
@@ -280,7 +298,7 @@ npm run test:integration    # Integration tests
 
 ---
 
-## ⚡ Performance Comparison
+##  Performance Comparison
 
 | Aspect | Supabase | Self-Hosted |
 |--------|----------|-------------|
@@ -295,13 +313,13 @@ npm run test:integration    # Integration tests
 
 ---
 
-## 📄 License
+##  License
 
 MIT
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing`)

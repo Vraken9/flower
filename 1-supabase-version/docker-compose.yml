@@ -3,18 +3,18 @@
 # ============================================
 # 
 # Usage:
-#   docker-compose up -d        # Start in background
-#   docker-compose down         # Stop
-#   docker-compose logs -f      # View logs
+#   docker-compose up -d --build    # Start in background
+#   docker-compose down              # Stop
+#   docker-compose logs -f           # View logs
 #
 # For Podman:
-#   podman-compose up -d
+#   podman-compose up -d --build
 #
 
 services:
   web:
     build:
-      context: ./web
+      context: ../web
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
