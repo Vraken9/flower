@@ -1,69 +1,46 @@
 # 🌸 Bloom – Flower Marketplace
 
-Marketplace bunga online dengan fitur role-based access (user, owner, admin).
+Marketplace bunga dengan akses berbasis peran (user, owner, admin) lengkap dengan cart, favorit, dan dashboard pengelolaan toko.
 
-## Tech Stack
+## Tech stack
+- Next.js 16 (App Router), React, TypeScript, Tailwind CSS 4
+- Supabase (Auth + PostgreSQL + RLS)
+- Zustand (cart) & React Context (auth/favorites)
+- Vitest untuk testing
 
-- **Frontend** — Next.js 16 (App Router), React, TypeScript, Tailwind CSS 4
-- **Backend** — Supabase (Auth + PostgreSQL + RLS)
-- **State** — Zustand (cart), React Context (auth, favorites)
-- **Testing** — Vitest
+## Prasyarat
+- Node.js 20+ & npm
+- Project Supabase beserta `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, dan `SUPABASE_SERVICE_ROLE_KEY` (server only)
+- Opsional: Docker (lihat `_deployment/`)
 
-## Project Structure
-
+## Struktur singkat
 ```
-web/                    ← Semua kode ada di sini
-├── src/
-│   ├── app/            # Pages & API Routes (App Router)
-│   ├── components/     # UI Components
-│   └── lib/            # Contexts, stores, types, utils
-├── public/             # Static assets
-├── .env.local          # Supabase credentials
+web/
+├── src/              # App Router pages, API routes, components, utils
+├── public/           # Static assets
+├── .env.local        # Jangan commit (gunakan template .env.example)
 └── package.json
-
-_deployment/            ← Arsip config deploy (abaikan saat develop)
 ```
 
-## Quick Start
+## Setup lokal
+1) `cd web`  
+2) `cp .env.example .env.local` lalu isi nilai Supabase (service_role hanya dipakai server).  
+3) `npm install`  
+4) `npm run dev` dan buka http://localhost:3000  
 
-```bash
-cd web
-npm install
-npm run dev
-```
+## Script utama
+- `npm run dev` – dev server
+- `npm run build` / `npm start` – build & run produksi
+- `npm run lint` – cek lint
+- `npm test` / `npm run test:integration` – unit & integrasi (butuh env Supabase)
 
-Buka http://localhost:3000
+## Akun uji (seed)
+- Admin: `admin@flowermarket.com` / `admin123456`
+- Owner: `owner.edelweis@gmail.com` / `owner123456`
+- User: `buyer@gmail.com` / `buyer123456`
 
-## Test Accounts
-
-| Email | Password | Role |
-|-------|----------|------|
-| admin@flowermarket.com | admin123456 | admin |
-| owner.edelweis@gmail.com | owner123456 | owner |
-| buyer@gmail.com | buyer123456 | user |
-
-## Roles
-
-| Role | Capabilities |
-|------|-------------|
-| **user** | Browse, cart, favorites, apply jadi owner |
-| **owner** | + Kelola toko & produk sendiri |
-| **admin** | + Kelola semua toko, review aplikasi owner |
-
-## Useful Commands
-
-```bash
-cd web
-npm run dev          # Development server
-npm run build        # Production build
-npm test             # Run tests
-npm run lint         # Lint check
-```
-
-## Deployment
-
-Config deployment tersimpan di `_deployment/`. Lihat folder tersebut ketika siap deploy.
-
----
+## Keamanan & deployment
+- Jangan commit `.env*`, `.next`, atau `node_modules` (sudah di `.gitignore`); simpan kunci di GitHub Secrets untuk CI/CD.
+- Catatan deploy internal disimpan lokal (tidak ikut dipublish) agar repository publik tetap bersih dan profesional.
 
 MIT License

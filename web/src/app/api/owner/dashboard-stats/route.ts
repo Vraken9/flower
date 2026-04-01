@@ -1,21 +1,44 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
+function timeframeToDays(tf: string): number {
+  switch (tf) {
+    case "1d": return 1;
+    case "7d": return 7;
+    case "14d": return 14;
+    case "30d": return 30;
+    case "90d": return 90;
+    default: return 9999;
+  }
+}
+
 /**
- * GET /api/owner/dashboard-stats
- * Get dashboard statistics for the current owner
+ * GET /api/owner/dashboard-stats?timeframe=30d
+ * Get dashboard statistics for the current owner (or admin aggregate)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerClient();
-    
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
+    }
+
+    // Parse timeframe
+    const { searchParams } = new URL(request.url);
+    const timeframe = searchParams.get("timeframe") || "all";
+
+    const useTimeFilter = timeframe !== "all";
+    let cutoffISO: string | null = null;
+    if (useTimeFilter) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - timeframeToDays(timeframe));
+      cutoffISO = cutoff.toISOString();
     }
 
     // Get user's profile
@@ -36,7 +59,7 @@ export async function GET() {
 
     // Get shop(s) - admin sees aggregate, owner sees their shop
     let shopIds: string[] = [];
-    
+
     if (isAdmin) {
       const { data: shops } = await supabase.from("shops").select("id");
       shopIds = shops?.map(s => s.id) || [];
@@ -60,6 +83,7 @@ export async function GET() {
           totalFavorites: 0,
           totalCartItems: 0,
           topProducts: [],
+          periodDays: useTimeFilter ? timeframeToDays(timeframe) : null,
         },
       });
     }
@@ -72,28 +96,37 @@ export async function GET() {
 
     const productIds = products?.map(p => p.id) || [];
 
-    // Get stats
+    // Helper to build time-filtered count query
+    const countWithTime = (table: string, filterCol: string, filterVals: string[]) => {
+      let q = supabase.from(table).select("id", { count: "exact", head: true }).in(filterCol, filterVals);
+      if (useTimeFilter && cutoffISO) {
+        q = q.gte("created_at", cutoffISO);
+      }
+      return q;
+    };
+
+    // Get stats (with optional time filter)
     const [
       whatsappRes,
       shopViewsRes,
       productViewsRes,
       favoritesRes,
-      cartRes
+      cartRes,
     ] = await Promise.all([
-      supabase.from("whatsapp_clicks").select("id", { count: "exact", head: true }).in("shop_id", shopIds),
-      supabase.from("shop_views").select("id", { count: "exact", head: true }).in("shop_id", shopIds),
-      productIds.length > 0 
-        ? supabase.from("product_views").select("id", { count: "exact", head: true }).in("product_id", productIds)
+      countWithTime("whatsapp_clicks", "shop_id", shopIds),
+      countWithTime("shop_views", "shop_id", shopIds),
+      productIds.length > 0
+        ? countWithTime("product_views", "product_id", productIds)
         : Promise.resolve({ count: 0 }),
       productIds.length > 0
-        ? supabase.from("favorites").select("id", { count: "exact", head: true }).in("product_id", productIds)
+        ? countWithTime("favorites", "product_id", productIds)
         : Promise.resolve({ count: 0 }),
       productIds.length > 0
-        ? supabase.from("cart_items").select("id", { count: "exact", head: true }).in("product_id", productIds)
+        ? countWithTime("cart_items", "product_id", productIds)
         : Promise.resolve({ count: 0 }),
     ]);
 
-    // Get top products by views/favorites
+    // Get top products by views/favorites (with time filter)
     let topProducts: Array<{
       id: string;
       name: string;
@@ -105,11 +138,18 @@ export async function GET() {
 
     if (products && products.length > 0) {
       const productStats = await Promise.all(
-        products.slice(0, 10).map(async (p) => {
-          const [viewsRes, favsRes, cartRes] = await Promise.all([
-            supabase.from("product_views").select("id", { count: "exact", head: true }).eq("product_id", p.id),
-            supabase.from("favorites").select("id", { count: "exact", head: true }).eq("product_id", p.id),
-            supabase.from("cart_items").select("id", { count: "exact", head: true }).eq("product_id", p.id),
+        products.slice(0, 20).map(async (p) => {
+          const buildQ = (table: string) => {
+            let q = supabase.from(table).select("id", { count: "exact", head: true }).eq("product_id", p.id);
+            if (useTimeFilter && cutoffISO) {
+              q = q.gte("created_at", cutoffISO);
+            }
+            return q;
+          };
+          const [viewsRes, favsRes, cartItemRes] = await Promise.all([
+            buildQ("product_views"),
+            buildQ("favorites"),
+            buildQ("cart_items"),
           ]);
           return {
             id: p.id,
@@ -117,12 +157,12 @@ export async function GET() {
             image_url: p.image_url,
             views: viewsRes.count || 0,
             favorites: favsRes.count || 0,
-            cart_adds: cartRes.count || 0,
+            cart_adds: cartItemRes.count || 0,
           };
         })
       );
 
-      // Sort by total engagement (views + favorites + cart)
+      // Sort by total engagement
       topProducts = productStats
         .sort((a, b) => (b.views + b.favorites + b.cart_adds) - (a.views + a.favorites + a.cart_adds))
         .slice(0, 5);
@@ -138,6 +178,7 @@ export async function GET() {
         totalFavorites: favoritesRes.count || 0,
         totalCartItems: cartRes.count || 0,
         topProducts,
+        periodDays: useTimeFilter ? timeframeToDays(timeframe) : null,
       },
     });
   } catch (error) {

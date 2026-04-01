@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   FileText,
   BarChart3,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -27,6 +28,7 @@ const ownerLinks = [
 const adminLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/users", label: "Kelola Pengguna", icon: Users },
   { href: "/dashboard/shops", label: "Kelola Toko", icon: Store },
   { href: "/dashboard/products/admin-new", label: "Tambah Produk", icon: PlusCircle },
   { href: "/dashboard/applications", label: "Aplikasi Owner", icon: FileText },

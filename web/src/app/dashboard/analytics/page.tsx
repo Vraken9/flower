@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   BarChart3,
   TrendingUp,
@@ -10,6 +10,7 @@ import {
   Package,
   Users,
   Loader2,
+  Calendar,
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth.context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -49,8 +50,15 @@ interface AnalyticsData {
     name: string;
     products: number;
     productViews: number;
+    shopViews: number;
     whatsappClicks: number;
   }[];
+  periodStats: {
+    productViews: number;
+    shopViews: number;
+    whatsappClicks: number;
+  };
+  periodDays: number | null;
   last30Days: {
     productViews: number;
     shopViews: number;
@@ -58,20 +66,27 @@ interface AnalyticsData {
   };
 }
 
+const TIMEFRAME_OPTIONS = [
+  { value: "1d", label: "1 Hari" },
+  { value: "7d", label: "7 Hari" },
+  { value: "14d", label: "14 Hari" },
+  { value: "30d", label: "30 Hari" },
+  { value: "90d", label: "90 Hari" },
+  { value: "all", label: "Semua Waktu" },
+];
+
 const COLORS = ["#f43f5e", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
 
 export default function AnalyticsDashboardPage() {
   const { session } = useAuth();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState("30d");
 
-  useEffect(() => {
-    if (session) fetchAnalytics();
-  }, [session]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async (tf: string) => {
     try {
-      const res = await fetch("/api/admin/analytics", { credentials: "include" });
+      setLoading(true);
+      const res = await fetch(`/api/admin/analytics?timeframe=${tf}`, { credentials: "include" });
       const result = await res.json();
       if (result.success) {
         setData(result.data);
@@ -81,7 +96,13 @@ export default function AnalyticsDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (session) fetchAnalytics(timeframe);
+  }, [session, timeframe, fetchAnalytics]);
+
+  const periodLabel = TIMEFRAME_OPTIONS.find(o => o.value === timeframe)?.label || timeframe;
 
   if (loading) {
     return (
@@ -144,14 +165,30 @@ export default function AnalyticsDashboardPage() {
   return (
     <ProtectedRoute allowedRoles={["admin"]}>
       <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100">
-            <BarChart3 className="h-5 w-5 text-rose-600" />
+        {/* Header with Timeframe Selector */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100">
+              <BarChart3 className="h-5 w-5 text-rose-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+              <p className="text-sm text-gray-500">Statistik dan performa platform</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-            <p className="text-sm text-gray-500">Statistik dan performa platform</p>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <select
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-200"
+            >
+              {TIMEFRAME_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -177,24 +214,24 @@ export default function AnalyticsDashboardPage() {
           ))}
         </div>
 
-        {/* Last 30 Days Summary */}
+        {/* Period Summary */}
         <div className="rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 p-6 text-white">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
             <TrendingUp className="h-5 w-5" />
-            Ringkasan 30 Hari Terakhir
+            Ringkasan {periodLabel}
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-xl bg-white/20 p-4">
               <p className="text-sm text-white/80">Views Produk</p>
-              <p className="text-2xl font-bold">{data.last30Days.productViews.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{(data.periodStats?.productViews ?? data.last30Days.productViews).toLocaleString()}</p>
             </div>
             <div className="rounded-xl bg-white/20 p-4">
               <p className="text-sm text-white/80">Views Toko</p>
-              <p className="text-2xl font-bold">{data.last30Days.shopViews.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{(data.periodStats?.shopViews ?? data.last30Days.shopViews).toLocaleString()}</p>
             </div>
             <div className="rounded-xl bg-white/20 p-4">
               <p className="text-sm text-white/80">Klik WhatsApp</p>
-              <p className="text-2xl font-bold">{data.last30Days.whatsappClicks.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{(data.periodStats?.whatsappClicks ?? data.last30Days.whatsappClicks).toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -204,7 +241,7 @@ export default function AnalyticsDashboardPage() {
           {/* Traffic Line Chart */}
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">
-              Traffic 14 Hari Terakhir
+              Traffic {periodLabel}
             </h3>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -307,9 +344,9 @@ export default function AnalyticsDashboardPage() {
             <h3 className="mb-4 text-lg font-semibold text-gray-900">
               Performa Toko
             </h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
               <table className="w-full">
-                <thead>
+                <thead className="sticky top-0 bg-white">
                   <tr className="border-b border-gray-100">
                     <th className="pb-3 text-left text-xs font-medium uppercase text-gray-500">
                       Toko
@@ -318,7 +355,10 @@ export default function AnalyticsDashboardPage() {
                       Produk
                     </th>
                     <th className="pb-3 text-right text-xs font-medium uppercase text-gray-500">
-                      Views
+                      Views Toko
+                    </th>
+                    <th className="pb-3 text-right text-xs font-medium uppercase text-gray-500">
+                      Views Produk
                     </th>
                     <th className="pb-3 text-right text-xs font-medium uppercase text-gray-500">
                       Klik WA
@@ -326,7 +366,7 @@ export default function AnalyticsDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {data.shopAnalytics.slice(0, 10).map((shop, index) => (
+                  {data.shopAnalytics.map((shop, index) => (
                     <tr key={shop.id} className="hover:bg-gray-50">
                       <td className="py-3">
                         <div className="flex items-center gap-2">
@@ -340,6 +380,9 @@ export default function AnalyticsDashboardPage() {
                       </td>
                       <td className="py-3 text-right text-sm text-gray-600">
                         {shop.products}
+                      </td>
+                      <td className="py-3 text-right text-sm text-gray-600">
+                        {(shop.shopViews || 0).toLocaleString()}
                       </td>
                       <td className="py-3 text-right text-sm text-gray-600">
                         {shop.productViews.toLocaleString()}

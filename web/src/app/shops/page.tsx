@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@/lib/supabase/server";
 import { ShopGrid } from "@/components/shop/shop-grid";
-import type { Shop } from "@/lib/types";
+import { ShopsFilter } from "@/components/shop/shops-filter";
+import type { Shop, Category } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Daftar Toko",
@@ -25,8 +26,15 @@ async function getShops() {
   return (data as Shop[]) || [];
 }
 
+async function getCategories() {
+  const supabase = await createServerClient();
+  const { data } = await supabase.from("categories").select("*").order("name");
+  return (data as Category[]) || [];
+}
+
 export default async function ShopsPage() {
   const shops = await getShops();
+  const categories = await getCategories();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -42,7 +50,7 @@ export default async function ShopsPage() {
         </p>
       </div>
 
-      <ShopGrid shops={shops} />
+      <ShopsFilter shops={shops} categories={categories} />
     </div>
   );
 }

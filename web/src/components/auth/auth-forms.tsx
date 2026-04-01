@@ -12,6 +12,59 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/lib/contexts/auth.context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { createClient } from '@/lib/supabase/client'
+
+// ──────────────────────────────────────────
+//  GOOGLE OAUTH BUTTON
+// ──────────────────────────────────────────
+function GoogleLoginButton() {
+  const [loading, setLoading] = useState(false)
+
+  const handleGoogleLogin = async () => {
+    setLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (error) {
+      console.error('Google OAuth error:', error)
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleGoogleLogin}
+      disabled={loading}
+      className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+    >
+      <svg className="h-5 w-5" viewBox="0 0 24 24">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      {loading ? 'Menghubungkan...' : 'Masuk dengan Google'}
+    </button>
+  )
+}
+
+// ──────────────────────────────────────────
+//  DIVIDER
+// ──────────────────────────────────────────
+function OrDivider() {
+  return (
+    <div className="relative flex items-center">
+      <div className="grow border-t border-gray-200" />
+      <span className="mx-4 shrink-0 text-xs text-gray-400">atau masuk dengan email</span>
+      <div className="grow border-t border-gray-200" />
+    </div>
+  )
+}
 
 // ──────────────────────────────────────────
 //  LOGIN FORM
@@ -50,6 +103,10 @@ export function LoginForm() {
         <h1 className="text-3xl font-bold">Masuk</h1>
         <p className="text-gray-500">Masuk ke akun Flower Marketplace Anda</p>
       </div>
+
+      {/* Google OAuth */}
+      <GoogleLoginButton />
+      <OrDivider />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -144,7 +201,7 @@ export function RegisterForm() {
   const { register } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/auth/login'
+  const redirectTo = searchParams.get('redirect') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -170,8 +227,10 @@ export function RegisterForm() {
 
     if (result.success) {
       setSuccess(true)
+      // User is auto-logged-in after registration, redirect to home or requested page
       setTimeout(() => {
-        router.push(redirectTo + (redirectTo.includes('?') ? '&' : '?') + 'message=registered')
+        router.push(redirectTo)
+        router.refresh()
       }, 2000)
     } else {
       setError(result.message)
@@ -182,11 +241,15 @@ export function RegisterForm() {
   if (success) {
     return (
       <div className="mx-auto max-w-sm space-y-6 text-center">
-        <div className="text-6xl">✅</div>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-green-600">Registrasi Berhasil!</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Registrasi Berhasil</h1>
           <p className="text-gray-600">
-            Akun Anda telah dibuat. Anda akan diarahkan ke halaman login...
+            Akun Anda telah dibuat dan Anda sudah login. Mengalihkan ke halaman utama...
           </p>
         </div>
       </div>
@@ -199,6 +262,10 @@ export function RegisterForm() {
         <h1 className="text-3xl font-bold">Daftar</h1>
         <p className="text-gray-500">Buat akun Flower Marketplace baru</p>
       </div>
+
+      {/* Google OAuth */}
+      <GoogleLoginButton />
+      <OrDivider />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (

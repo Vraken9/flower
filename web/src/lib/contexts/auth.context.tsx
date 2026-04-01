@@ -8,6 +8,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { type User, type AuthSession, type LoginData, type RegisterData } from '@/lib/types/auth'
+import { useCartStore } from '@/lib/store/cart'
 
 interface AuthContextType {
   // State
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const supabase = createClient()
+  const loadCartFromServer = useCartStore((s) => s.loadFromServer)
 
   // ──────────────────────────────────────────
   //  RESTORE SESSION + LISTEN FOR CHANGES
@@ -77,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               refresh_token: sbSession.refresh_token ?? '',
               expires_at: sbSession.expires_at ?? 0,
             })
+            // Load cart from server on session restore
+            loadCartFromServer()
           }
         }
       } catch (err) {
@@ -94,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event === 'SIGNED_OUT' || !sbSession) {
           setUser(null)
           setSession(null)
+          useCartStore.getState().clearCart()
           return
         }
 
@@ -107,6 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               refresh_token: sbSession.refresh_token ?? '',
               expires_at: sbSession.expires_at ?? 0,
             })
+            // Load cart from server on auth change
+            loadCartFromServer()
           }
         }
       }
@@ -177,7 +184,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password: data.password,
         options: { 
           data: { full_name: data.full_name },
-          emailRedirectTo: `${window.location.origin}/auth/login`
         },
       })
 
@@ -186,7 +192,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error.message.includes('rate limit')) {
           return { success: false, message: 'Terlalu banyak percobaan registrasi. Silakan coba lagi nanti.' }
         }
+        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+          return { success: false, message: 'Email sudah terdaftar. Silakan login atau gunakan email lain.' }
+        }
         return { success: false, message: error.message }
+      }
+
+      // Supabase returns identities: [] when email already exists (security measure)
+      if (result.user && result.user.identities && result.user.identities.length === 0) {
+        return { success: false, message: 'Email sudah terdaftar. Silakan login atau gunakan email lain.' }
       }
 
       // Ensure profile row
@@ -196,16 +210,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: result.user.id, full_name: data.full_name }),
         })
+
+        // Auto-confirm user via admin API to bypass email confirmation
+        try {
+          const confirmRes = await fetch('/api/auth/confirm-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: result.user.id }),
+          })
+
+          if (confirmRes.ok) {
+            // After confirming, auto-login so the user can immediately use the app
+            const { error: loginError } = await supabase.auth.signInWithPassword({
+              email: data.email,
+              password: data.password,
+            })
+
+            if (!loginError) {
+              const profile = await fetchProfile(supabase, result.user.id, data.email)
+              if (profile) {
+                setUser(profile)
+              }
+            }
+          }
+        } catch {
+          // If auto-confirm fails, user can login manually later
+        }
       }
 
-      // Check if email confirmation is disabled (user can login immediately)
-      const needsConfirmation = result.user?.identities?.length === 0
-      
       return { 
         success: true, 
-        message: needsConfirmation 
-          ? 'Registrasi berhasil! Silakan cek email untuk konfirmasi akun Anda.' 
-          : 'Registrasi berhasil! Anda sekarang dapat login dengan akun baru Anda.'
+        message: 'Registrasi berhasil! Anda sekarang dapat login dengan akun baru Anda.'
       }
     } catch (error) {
       console.error('Register error:', error)
@@ -216,11 +251,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ──────────────────────────────────────────
   //  LOGOUT
   // ──────────────────────────────────────────
-  const logout = async () => {
-    await supabase.auth.signOut()
+  const logout = useCallback(async () => {
+    // Clear state immediately to provide instant UI feedback
     setUser(null)
     setSession(null)
-  }
+    useCartStore.getState().clearCart()
+    
+    try {
+      await supabase.auth.signOut()
+    } catch (err) {
+      console.error('Logout error:', err)
+    }
+    
+    // Force navigation to home page
+    window.location.href = '/'
+  }, [supabase])
 
   // ──────────────────────────────────────────
   //  UPDATE PROFILE

@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { shop_name, shop_description, shop_location, motivation, whatsapp } = body;
+    const { shop_name, shop_description, shop_location, kabupaten, kecamatan, motivation, whatsapp } = body;
 
     if (!shop_name) {
       return NextResponse.json(
@@ -149,6 +149,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for rejection cooldown (1 day)
+    const { data: recentRejected } = await supabase
+      .from("applications")
+      .select("id, reviewed_at")
+      .eq("user_id", authUser.id)
+      .eq("status", "rejected")
+      .order("reviewed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentRejected?.reviewed_at) {
+      const rejectedAt = new Date(recentRejected.reviewed_at);
+      const cooldownEnd = new Date(rejectedAt.getTime() + 24 * 60 * 60 * 1000);
+      const now = new Date();
+      if (now < cooldownEnd) {
+        const hoursLeft = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60));
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Aplikasi Anda ditolak. Silakan coba lagi dalam ${hoursLeft} jam.`,
+            cooldown_until: cooldownEnd.toISOString(),
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const { data, error } = await supabase
       .from("applications")
       .insert({
@@ -156,6 +183,8 @@ export async function POST(request: NextRequest) {
         shop_name,
         shop_description: shop_description || null,
         shop_location: shop_location || null,
+        kabupaten: kabupaten || null,
+        kecamatan: kecamatan || null,
         motivation: motivation || null,
         whatsapp: whatsapp || null,
       })

@@ -1,40 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getAuthUser } from "@/lib/api/auth-guard";
+import { createServerClient } from "@/lib/supabase/server";
 
 /**
- * POST /api/cart/add    → Add / increment item in user's cart
  * GET  /api/cart        → List user's cart items with product details
- * 
- * Body (POST): { product_id: string, qty?: number }
+ * POST /api/cart        → Add / set item in user's cart
+ * DELETE /api/cart?product_id=xxx → Remove item from cart
  *
- * Uses upsert with ON CONFLICT to increment quantity.
+ * Body (POST): { product_id: string, qty?: number }
+ * Uses cookie-based auth via createServerClient.
  */
 
-function supabaseWithToken(token: string) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
-}
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const supabase = await createServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
-
     const { data, error } = await supabase
       .from("cart_items")
-      .select("*, products(id, name, price, image_url, stock, shops(name))")
+      .select("*, products(*)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -45,7 +35,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, items: data });
   } catch {
     return NextResponse.json(
       { success: false, message: "Internal server error" },
@@ -56,16 +46,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const supabase = await createServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
-
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
 
     const body = await request.json();
     const { product_id, qty } = body;
@@ -90,10 +79,10 @@ export async function POST(request: NextRequest) {
     let error;
 
     if (existing) {
-      // Update quantity
+      // Update quantity (set to the given value, not increment)
       const result = await supabase
         .from("cart_items")
-        .update({ qty: existing.qty + quantity })
+        .update({ qty: quantity })
         .eq("id", existing.id)
         .select()
         .single();
@@ -136,16 +125,16 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    if (!user) {
+    const supabase = await createServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const token = request.headers.get("authorization")!.slice(7);
-    const supabase = supabaseWithToken(token);
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("product_id");
 

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/contexts/auth.context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { formatDate } from "@/lib/utils";
+import { getKabupatenList, getKecamatanList } from "@/lib/data/jawa-tengah";
 
 type ApplicationStatus = "pending" | "approved" | "rejected" | null;
 
@@ -27,6 +28,8 @@ export default function ApplyOwnerPage() {
     shop_name: "",
     shop_description: "",
     shop_location: "",
+    kabupaten: "",
+    kecamatan: "",
     whatsapp: "",
     motivation: "",
   });
@@ -35,6 +38,7 @@ export default function ApplyOwnerPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [existingApplication, setExistingApplication] = useState<ExistingApplication | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState<string | null>(null);
 
   // Check if user already has an application
   useEffect(() => {
@@ -46,6 +50,18 @@ export default function ApplyOwnerPage() {
         if (res.ok) {
           const data = await res.json();
           if (data.application) {
+            // If rejected, check cooldown
+            if (data.application.status === "rejected" && data.application.reviewed_at) {
+              const rejectedAt = new Date(data.application.reviewed_at);
+              const cooldownEnd = new Date(rejectedAt.getTime() + 24 * 60 * 60 * 1000);
+              const now = new Date();
+              if (now >= cooldownEnd) {
+                // Cooldown expired — allow reapply (don't set existingApplication)
+                return;
+              }
+              const hoursLeft = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60));
+              setCooldownRemaining(`${hoursLeft} jam`);
+            }
             setExistingApplication(data.application);
           }
         }
@@ -154,7 +170,9 @@ export default function ApplyOwnerPage() {
         color: "text-red-600",
         bgColor: "bg-red-100",
         title: "Aplikasi Ditolak",
-        description: existingApplication.rejection_reason || "Maaf, aplikasi Anda tidak dapat disetujui saat ini.",
+        description: cooldownRemaining
+          ? `Maaf, aplikasi Anda ditolak. Anda dapat mengajukan kembali dalam ${cooldownRemaining}.`
+          : existingApplication.rejection_reason || "Maaf, aplikasi Anda tidak dapat disetujui saat ini.",
       },
     };
 
@@ -190,6 +208,11 @@ export default function ApplyOwnerPage() {
                 <Store className="h-4 w-4" />
                 Buka Dashboard
               </Link>
+            ) : existingApplication.status === "rejected" && cooldownRemaining ? (
+              <div className="rounded-xl bg-orange-50 px-4 py-3 text-sm text-orange-700">
+                <Clock className="mr-1.5 inline h-4 w-4" />
+                Cooldown aktif — Anda dapat mengajukan ulang dalam <strong>{cooldownRemaining}</strong>
+              </div>
             ) : (
               <Link
                 href="/"
@@ -284,17 +307,52 @@ export default function ApplyOwnerPage() {
 
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Lokasi
+              Lokasi (Jawa Tengah)
             </label>
-            <input
-              type="text"
-              value={form.shop_location}
-              onChange={(e) =>
-                setForm({ ...form, shop_location: e.target.value })
-              }
-              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
-              placeholder="cth. Jakarta Selatan"
-            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select
+                value={form.kabupaten}
+                onChange={(e) => {
+                  const kab = e.target.value;
+                  setForm({
+                    ...form,
+                    kabupaten: kab,
+                    kecamatan: "",
+                    shop_location: kab ? `${kab}, Jawa Tengah` : "",
+                  });
+                }}
+                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              >
+                <option value="">Pilih Kabupaten/Kota…</option>
+                {getKabupatenList().map((kab) => (
+                  <option key={kab} value={kab}>{kab}</option>
+                ))}
+              </select>
+              <select
+                value={form.kecamatan}
+                onChange={(e) => {
+                  const kec = e.target.value;
+                  setForm({
+                    ...form,
+                    kecamatan: kec,
+                    shop_location: kec
+                      ? `${kec}, ${form.kabupaten}, Jawa Tengah`
+                      : `${form.kabupaten}, Jawa Tengah`,
+                  });
+                }}
+                disabled={!form.kabupaten}
+                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-50"
+              >
+                <option value="">Pilih Kecamatan…</option>
+                {form.kabupaten &&
+                  getKecamatanList(form.kabupaten).map((kec) => (
+                    <option key={kec} value={kec}>{kec}</option>
+                  ))}
+              </select>
+            </div>
+            {form.shop_location && (
+              <p className="mt-1 text-xs text-gray-500">📍 {form.shop_location}</p>
+            )}
           </div>
 
           <div>

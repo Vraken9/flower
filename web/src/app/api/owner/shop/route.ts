@@ -21,11 +21,12 @@ export async function GET() {
       );
     }
 
-    // Get user's shop
+    // Get user's main shop
     const { data: shop, error } = await supabase
       .from("shops")
       .select("*")
       .eq("owner_id", user.id)
+      .is("parent_shop_id", null)
       .maybeSingle();
 
     if (error) {
@@ -91,11 +92,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already has a shop
-    const { data: existingShop, error: existingError } = await supabase
+    // Get request body
+    const body = await request.json();
+    const { name, description, location, kabupaten, kecamatan, image_url, whatsapp, category_id, parent_shop_id } = body;
+
+    // Check if user already has a MAIN shop
+    const { data: mainShop, error: existingError } = await supabase
       .from("shops")
       .select("id")
       .eq("owner_id", user.id)
+      .is("parent_shop_id", null)
       .maybeSingle();
 
     if (existingError) {
@@ -105,19 +111,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (existingShop) {
+    if (mainShop && !parent_shop_id) {
       return NextResponse.json(
         {
           success: false,
-          message: "You already have a shop. Use PUT to update it.",
+          message: "You already have a main shop. Use PUT to update it or create a branch with parent_shop_id.",
         },
         { status: 400 }
       );
     }
-
-    // Get request body
-    const body = await request.json();
-    const { name, description, location, image_url, whatsapp } = body;
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -142,8 +144,12 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         location: location?.trim() || null,
+        kabupaten: kabupaten?.trim() || null,
+        kecamatan: kecamatan?.trim() || null,
         image_url: image_url?.trim() || null,
         whatsapp: whatsapp?.trim() || null,
+        category_id: category_id || null,
+        parent_shop_id: parent_shop_id || null,
         is_active: true,
       })
       .select()
@@ -197,30 +203,44 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Get user's shop
-    const { data: shop, error: fetchError } = await supabase
-      .from("shops")
-      .select("id")
-      .eq("owner_id", user.id)
-      .maybeSingle();
-
-    if (fetchError) {
-      return NextResponse.json(
-        { success: false, message: "Failed to fetch shop" },
-        { status: 500 }
-      );
-    }
-
-    if (!shop) {
-      return NextResponse.json(
-        { success: false, message: "Shop not found. Create one first." },
-        { status: 404 }
-      );
-    }
-
     // Get request body
     const body = await request.json();
-    const { name, description, location, image_url, whatsapp } = body;
+    const { id, name, description, location, kabupaten, kecamatan, image_url, whatsapp, category_id } = body;
+
+    let shopToUpdateId = id;
+
+    if (!shopToUpdateId) {
+      // Get user's main shop
+      const { data: shop, error: fetchError } = await supabase
+        .from("shops")
+        .select("id")
+        .eq("owner_id", user.id)
+        .is("parent_shop_id", null)
+        .maybeSingle();
+
+      if (fetchError || !shop) {
+        return NextResponse.json(
+          { success: false, message: "Shop not found. Create one first." },
+          { status: 404 }
+        );
+      }
+      shopToUpdateId = shop.id;
+    } else {
+      // Verify the owner actually owns this specific branch/shop
+      const { data: shop, error: fetchError } = await supabase
+        .from("shops")
+        .select("id")
+        .eq("id", shopToUpdateId)
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      if (fetchError || !shop) {
+        return NextResponse.json(
+          { success: false, message: "Shop not found or you don't have permission." },
+          { status: 404 }
+        );
+      }
+    }
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -244,10 +264,13 @@ export async function PUT(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         location: location?.trim() || null,
+        kabupaten: kabupaten?.trim() || null,
+        kecamatan: kecamatan?.trim() || null,
         image_url: image_url?.trim() || null,
         whatsapp: whatsapp?.trim() || null,
+        category_id: category_id || null,
       })
-      .eq("id", shop.id)
+      .eq("id", shopToUpdateId)
       .select()
       .single();
 

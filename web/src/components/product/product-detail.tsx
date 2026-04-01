@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Heart, ShoppingCart, Store, MessageCircle } from "lucide-react";
+import { ArrowLeft, Heart, ShoppingCart, Store, MessageCircle, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/lib/store/cart";
 import { useAuth } from "@/lib/contexts/auth.context";
+import { useFavorites } from "@/lib/contexts/favorites.context";
 import type { ProductWithShop } from "@/lib/types";
 
 interface ProductDetailProps {
@@ -18,6 +19,25 @@ interface ProductDetailProps {
 export function ProductDetail({ product }: ProductDetailProps) {
   const addItem = useCartStore((s) => s.addItem);
   const { user } = useAuth();
+  const { isFavorited, toggleFavorite, addToFavoritesWithAuth } = useFavorites();
+  const [favLoading, setFavLoading] = useState(false);
+
+  const isFav = isFavorited(product.id);
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      addToFavoritesWithAuth(product.id);
+      return;
+    }
+    setFavLoading(true);
+    try {
+      await toggleFavorite(product.id);
+    } catch {
+      // Ignore
+    } finally {
+      setFavLoading(false);
+    }
+  };
 
   // Track product view on mount
   useEffect(() => {
@@ -60,12 +80,16 @@ export function ProductDetail({ product }: ProductDetailProps) {
       // Ignore tracking errors
     }
 
-    // Create WhatsApp message
+    // Create WhatsApp message with review link
+    const reviewUrl = `${window.location.origin}/review?product_id=${product.id}&shop_id=${product.shop_id}&product_name=${encodeURIComponent(product.name)}&shop_name=${encodeURIComponent(product.shops?.name || "")}`;
+
     const message = encodeURIComponent(
       `Halo, saya tertarik dengan produk:\n\n` +
       `*${product.name}*\n` +
       `Harga: ${formatPrice(product.price)}\n\n` +
-      `Apakah produk ini masih tersedia?`
+      `Apakah produk ini masih tersedia?\n\n` +
+      `---\n` +
+      `Setelah menerima pesanan, mohon beri review: ${reviewUrl}`
     );
 
     // Convert 08xxx to 62xxx for WhatsApp API
@@ -177,10 +201,34 @@ export function ProductDetail({ product }: ProductDetailProps) {
                 </Button>
               )}
 
-              <Button variant="outline" size="lg" aria-label={`Tambah ${product.name} ke favorit`}>
-                <Heart className="h-4 w-4" aria-hidden="true" />
-                Favorit
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleToggleFavorite}
+                disabled={favLoading}
+                aria-label={isFav ? `Hapus ${product.name} dari favorit` : `Tambah ${product.name} ke favorit`}
+                className={isFav ? "border-red-300 text-red-500 hover:bg-red-50" : ""}
+              >
+                {favLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Heart className={`h-4 w-4 ${isFav ? "fill-red-500" : ""}`} aria-hidden="true" />
+                )}
+                {isFav ? "Difavoritkan" : "Favorit"}
               </Button>
+            </div>
+          )}
+
+          {/* Review link */}
+          {(!user || user.role === 'user') && (
+            <div className="mt-4">
+              <Link
+                href={`/review?product_id=${product.id}&shop_id=${product.shop_id}&product_name=${encodeURIComponent(product.name)}&shop_name=${encodeURIComponent(product.shops?.name || "")}`}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-rose-600"
+              >
+                <Star className="h-4 w-4" />
+                Beri Review untuk produk ini
+              </Link>
             </div>
           )}
 

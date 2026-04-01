@@ -42,3 +42,6 @@ next-env.d.ts
 
 # archived empty folder (locked by OS, safe to delete later)
 2-selfhosted-version/
+
+# private ops/deployment notes (keep local, don't publish)
+_deployment/

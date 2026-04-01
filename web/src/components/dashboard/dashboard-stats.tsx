@@ -1,10 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Package, Store, Eye, Heart, ShoppingCart, MessageCircle } from "lucide-react";
+import { Package, Store, Eye, Heart, ShoppingCart, MessageCircle, Calendar } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth.context";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
+
+const PIE_COLORS = ["#f43f5e", "#3b82f6", "#10b981", "#f59e0b"];
+
+const TIMEFRAME_OPTIONS = [
+  { value: "7d", label: "7 Hari" },
+  { value: "14d", label: "14 Hari" },
+  { value: "30d", label: "30 Hari" },
+  { value: "90d", label: "90 Hari" },
+  { value: "all", label: "Semua Waktu" },
+];
 
 interface TopProduct {
   id: string;
@@ -23,6 +40,7 @@ interface DashboardStatsData {
   totalFavorites: number;
   totalCartItems: number;
   topProducts: TopProduct[];
+  periodDays: number | null;
 }
 
 interface DashboardStatsProps {
@@ -34,28 +52,30 @@ export function DashboardStats({ totalProducts, totalShops }: DashboardStatsProp
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState("all");
+
+  const fetchStats = useCallback(async (tf: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/owner/dashboard-stats?timeframe=${tf}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setStats(data.stats);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch("/api/owner/dashboard-stats", {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success) {
-            setStats(data.stats);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+    fetchStats(timeframe);
+  }, [timeframe, fetchStats]);
 
   const isAdmin = user?.role === "admin";
 
@@ -127,6 +147,27 @@ export function DashboardStats({ totalProducts, totalShops }: DashboardStatsProp
 
   return (
     <div className="space-y-6">
+      {/* Timeframe Selector */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Statistik {TIMEFRAME_OPTIONS.find(o => o.value === timeframe)?.label || ""}
+        </h2>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <select
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value)}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          >
+            {TIMEFRAME_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Main Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {mainCards.map((card) => (
@@ -177,6 +218,68 @@ export function DashboardStats({ totalProducts, totalShops }: DashboardStatsProp
           </div>
         ))}
       </div>
+
+      {/* Engagement Pie Chart */}
+      {stats && (() => {
+        const pieData = [
+          { name: "Klik Produk", value: stats.totalProductViews, color: PIE_COLORS[0] },
+          { name: "Difavoritkan", value: stats.totalFavorites, color: PIE_COLORS[1] },
+          { name: "Masuk Keranjang", value: stats.totalCartItems, color: PIE_COLORS[2] },
+          { name: "Klik WhatsApp", value: stats.totalWhatsAppClicks, color: PIE_COLORS[3] },
+        ].filter(d => d.value > 0);
+
+        if (pieData.length === 0) return null;
+
+        return (
+          <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <h3 className="mb-4 text-sm font-medium text-gray-700">
+              Distribusi Interaksi
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2 items-center">
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        fontSize: "12px",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {pieData.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-gray-600">{item.name}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Top Products */}
       {stats?.topProducts && stats.topProducts.length > 0 && (

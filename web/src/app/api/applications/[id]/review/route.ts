@@ -151,6 +151,8 @@ export async function POST(
       name: application.shop_name,
       description: application.shop_description,
       location: application.shop_location,
+      kabupaten: application.kabupaten || null,
+      kecamatan: application.kecamatan || null,
       whatsapp: application.whatsapp,
       is_active: true,
     });

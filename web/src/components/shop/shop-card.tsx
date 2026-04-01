@@ -43,9 +43,16 @@ export function ShopCard({ shop, index = 0 }: ShopCardProps) {
 
         {/* Content */}
         <div className="p-5">
-          <h3 className="text-lg font-semibold text-gray-800 transition-colors group-hover:text-rose-600" style={{ textWrap: "balance" }}>
-            {shop.name}
-          </h3>
+          <div className="flex items-start justify-between">
+            <h3 className="text-lg font-semibold text-gray-800 transition-colors group-hover:text-rose-600" style={{ textWrap: "balance" }}>
+              {shop.name}
+            </h3>
+            {shop.parent_shop_id && (
+              <span className="ml-2 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                Cabang
+              </span>
+            )}
+          </div>
 
           {shop.description && (
             <p className="mt-1.5 text-sm text-gray-500 line-clamp-2">
