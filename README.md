@@ -1,46 +1,55 @@
-# 🌸 Bloom – Flower Marketplace
+# 🌸 Bloom — Flower Marketplace
 
-Marketplace bunga dengan akses berbasis peran (user, owner, admin) lengkap dengan cart, favorit, dan dashboard pengelolaan toko.
+Online flower marketplace with role-based access control (buyer, shop owner, admin).
 
-## Tech stack
-- Next.js 16 (App Router), React, TypeScript, Tailwind CSS 4
-- Supabase (Auth + PostgreSQL + RLS)
-- Zustand (cart) & React Context (auth/favorites)
-- Vitest untuk testing
+## Tech Stack
 
-## Prasyarat
-- Node.js 20+ & npm
-- Project Supabase beserta `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, dan `SUPABASE_SERVICE_ROLE_KEY` (server only)
-- Opsional: Docker (lihat `_deployment/`)
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4
+- **Backend**: Supabase (Auth, PostgreSQL, Row Level Security)
+- **State**: Zustand (cart), React Context (auth, favorites)
+- **Testing**: Vitest
 
-## Struktur singkat
+## Getting Started
+
+```bash
+cd web
+cp .env.example .env.local   # then fill in your Supabase keys
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+
+## Available Scripts
+
+```bash
+npm run dev       # Start development server
+npm run build     # Production build
+npm run start     # Start production server
+npm run lint      # Run ESLint
+npm test          # Run unit tests
+```
+
+## Project Structure
+
 ```
 web/
-├── src/              # App Router pages, API routes, components, utils
+├── src/
+│   ├── app/          # Next.js App Router pages & API routes
+│   ├── components/   # React components
+│   └── lib/          # Utilities, stores, types
 ├── public/           # Static assets
-├── .env.local        # Jangan commit (gunakan template .env.example)
-└── package.json
+└── supabase-migrations/  # Database migrations
 ```
 
-## Setup lokal
-1) `cd web`  
-2) `cp .env.example .env.local` lalu isi nilai Supabase (service_role hanya dipakai server).  
-3) `npm install`  
-4) `npm run dev` dan buka http://localhost:3000  
+## License
 
-## Script utama
-- `npm run dev` – dev server
-- `npm run build` / `npm start` – build & run produksi
-- `npm run lint` – cek lint
-- `npm test` / `npm run test:integration` – unit & integrasi (butuh env Supabase)
-
-## Akun uji (seed)
-- Admin: `admin@flowermarket.com` / `admin123456`
-- Owner: `owner.edelweis@gmail.com` / `owner123456`
-- User: `buyer@gmail.com` / `buyer123456`
-
-## Keamanan & deployment
-- Jangan commit `.env*`, `.next`, atau `node_modules` (sudah di `.gitignore`); simpan kunci di GitHub Secrets untuk CI/CD.
-- Catatan deploy internal disimpan lokal (tidak ikut dipublish) agar repository publik tetap bersih dan profesional.
-
-MIT License
+MIT
