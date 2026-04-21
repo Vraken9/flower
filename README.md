@@ -1,52 +1,52 @@
-# Bloom — Flower Marketplace
+# Bloom — Marketplace Bunga
 
-An online flower marketplace connecting buyers with trusted local florists. Built with **Next.js 16**, **Supabase**, and **TypeScript**.
+Marketplace bunga online yang menghubungkan pembeli dengan florist lokal terpercaya. Dibangun menggunakan **Next.js 16**, **Supabase**, dan **TypeScript**.
 
-Bloom provides a multi-role platform where buyers can discover and purchase flower arrangements, shop owners can manage their storefront and products, and administrators oversee the entire marketplace — all secured with Row Level Security at the database level.
+Bloom menyediakan platform multi-peran di mana pembeli dapat menemukan dan membeli rangkaian bunga, pemilik toko dapat mengelola etalase dan produk mereka, serta administrator mengawasi seluruh marketplace — semuanya diamankan dengan Row Level Security pada level database.
 
-## Features
+## Fitur
 
-**For Buyers**
-- Browse and search flower products across multiple shops
-- Add items to cart with real-time total calculation
-- Save favorite products for later
-- Leave reviews and ratings on purchased items
-- Track order status via WhatsApp integration
+**Untuk Pembeli**
+- Jelajahi dan cari produk bunga dari berbagai toko
+- Tambahkan item ke keranjang dengan kalkulasi total secara real-time
+- Simpan produk favorit untuk dilihat nanti
+- Berikan ulasan dan rating pada produk yang dibeli
+- Lacak status pesanan melalui integrasi WhatsApp
 
-**For Shop Owners**
-- Full dashboard to manage products, inventory, and pricing
-- Shop profile customization with categories and branch locations
-- Sales analytics and order management
-- Apply for owner status through a streamlined onboarding flow
+**Untuk Pemilik Toko**
+- Dashboard lengkap untuk mengelola produk, stok, dan harga
+- Kustomisasi profil toko dengan kategori dan lokasi cabang
+- Analitik penjualan dan manajemen pesanan
+- Ajukan status pemilik toko melalui alur pendaftaran yang mudah
 
-**For Admins**
-- Centralized admin panel with marketplace-wide analytics
-- User management and role assignment
-- Review and approve shop owner applications
-- Category and product moderation
+**Untuk Admin**
+- Panel admin terpusat dengan analitik seluruh marketplace
+- Manajemen pengguna dan penetapan peran
+- Tinjau dan setujui pengajuan pemilik toko
+- Moderasi kategori dan produk
 
-## Tech Stack
+## Teknologi yang Digunakan
 
-| Layer | Technology |
-|-------|------------|
+| Lapisan | Teknologi |
+|---------|-----------|
 | Framework | Next.js 16 (App Router) |
-| Language | TypeScript 5 |
+| Bahasa | TypeScript 5 |
 | UI | React 19, Tailwind CSS 4, Framer Motion |
-| Icons | Lucide React |
+| Ikon | Lucide React |
 | Auth & DB | Supabase (Auth, PostgreSQL, RLS, Storage) |
-| State | Zustand (cart), React Context (auth, favorites) |
-| Validation | Zod |
-| Charts | Recharts |
+| State | Zustand (keranjang), React Context (auth, favorit) |
+| Validasi | Zod |
+| Grafik | Recharts |
 | Testing | Vitest |
 
-## Getting Started
+## Cara Memulai
 
-### Prerequisites
+### Prasyarat
 
-- [Node.js](https://nodejs.org/) v20 or later
-- A [Supabase](https://supabase.com/) project (free tier works)
+- [Node.js](https://nodejs.org/) v20 atau lebih baru
+- Proyek [Supabase](https://supabase.com/) (paket gratis sudah cukup)
 
-### Setup
+### Instalasi
 
 ```bash
 git clone https://github.com/Vraken9/flower.git
@@ -56,83 +56,83 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+Buka [http://localhost:3000](http://localhost:3000) untuk melihat aplikasi.
 
 > [!IMPORTANT]
-> You must fill in your Supabase credentials in `.env.local` before running the app. See [Environment Variables](#environment-variables) below.
+> Anda harus mengisi kredensial Supabase di `.env.local` sebelum menjalankan aplikasi. Lihat bagian [Variabel Lingkungan](#variabel-lingkungan) di bawah.
 
-## Environment Variables
+## Variabel Lingkungan
 
-Create a `.env.local` file inside the `web/` directory:
+Buat file `.env.local` di dalam direktori `web/`:
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+| Variabel | Deskripsi |
+|----------|-----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL proyek Supabase Anda |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Kunci anon/publik Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Kunci service role Supabase (hanya sisi server) |
 
 > [!WARNING]
-> Never commit `.env.local` or expose your `SUPABASE_SERVICE_ROLE_KEY` in client-side code.
+> Jangan pernah melakukan commit `.env.local` atau mengekspos `SUPABASE_SERVICE_ROLE_KEY` di kode sisi klien.
 
-## Project Structure
+## Struktur Proyek
 
 ```
 web/
 ├── src/
 │   ├── app/                 # Next.js App Router
-│   │   ├── admin/           # Admin dashboard & management
-│   │   ├── api/             # API routes (auth, cart, reviews, etc.)
-│   │   ├── auth/            # Authentication pages
-│   │   ├── cart/            # Shopping cart page
-│   │   ├── dashboard/       # Shop owner dashboard
-│   │   ├── favorites/       # Saved products
-│   │   ├── products/        # Product catalog & detail
-│   │   ├── shops/           # Shop listing & profiles
-│   │   └── page.tsx         # Homepage
-│   ├── components/          # Reusable React components
-│   │   ├── ui/              # Base UI primitives
+│   │   ├── admin/           # Dashboard & manajemen admin
+│   │   ├── api/             # Route API (auth, keranjang, ulasan, dll.)
+│   │   ├── auth/            # Halaman autentikasi
+│   │   ├── cart/            # Halaman keranjang belanja
+│   │   ├── dashboard/       # Dashboard pemilik toko
+│   │   ├── favorites/       # Produk tersimpan
+│   │   ├── products/        # Katalog & detail produk
+│   │   ├── shops/           # Daftar toko & profil
+│   │   └── page.tsx         # Halaman utama
+│   ├── components/          # Komponen React yang dapat digunakan ulang
+│   │   ├── ui/              # Komponen UI dasar
 │   │   ├── layout/          # Navbar, Footer
-│   │   ├── home/            # Hero, featured sections
-│   │   ├── product/         # Product cards, grids
-│   │   ├── shop/            # Shop cards, details
-│   │   ├── cart/            # Cart components
-│   │   └── dashboard/       # Owner dashboard widgets
-│   └── lib/                 # Utilities & shared logic
-│       ├── api/             # Server-side API helpers
-│       ├── contexts/        # React Context providers
-│       ├── store/           # Zustand stores
-│       ├── supabase/        # Supabase client (server & browser)
-│       └── types/           # TypeScript type definitions
-├── supabase-migrations/     # SQL migration files
-├── public/                  # Static assets
-└── Dockerfile               # Multi-stage Docker build
+│   │   ├── home/            # Hero, bagian unggulan
+│   │   ├── product/         # Kartu produk, grid
+│   │   ├── shop/            # Kartu toko, detail
+│   │   ├── cart/            # Komponen keranjang
+│   │   └── dashboard/       # Widget dashboard pemilik
+│   └── lib/                 # Utilitas & logika bersama
+│       ├── api/             # Helper API sisi server
+│       ├── contexts/        # Provider React Context
+│       ├── store/           # Store Zustand
+│       ├── supabase/        # Klien Supabase (server & browser)
+│       └── types/           # Definisi tipe TypeScript
+├── supabase-migrations/     # File migrasi SQL
+├── public/                  # Aset statis
+└── Dockerfile               # Build Docker multi-stage
 ```
 
-## Available Scripts
+## Skrip yang Tersedia
 
-Run these from the `web/` directory:
+Jalankan perintah berikut dari direktori `web/`:
 
 ```bash
-npm run dev                  # Start dev server
-npm run build                # Production build
-npm run start                # Start production server
-npm run lint                 # Run ESLint
-npm test                     # Run unit tests
-npm run test:integration     # Run integration tests
+npm run dev                  # Jalankan server pengembangan
+npm run build                # Build untuk produksi
+npm run start                # Jalankan server produksi
+npm run lint                 # Jalankan ESLint
+npm test                     # Jalankan unit test
+npm run test:integration     # Jalankan integration test
 ```
 
 ## Deployment
 
-A multi-stage `Dockerfile` is included for containerized deployments:
+File `Dockerfile` multi-stage sudah disertakan untuk deployment berbasis container:
 
 ```bash
 cd web
 docker build \
-  --build-arg NEXT_PUBLIC_SUPABASE_URL=<your-url> \
-  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-key> \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL=<url-anda> \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=<kunci-anda> \
   -t bloom .
 docker run -p 3000:3000 bloom
 ```
 
 > [!NOTE]
-> The Docker image uses `node:20-alpine` and runs as a non-root user for security. See `web/Dockerfile` for full configuration.
+> Image Docker menggunakan `node:20-alpine` dan berjalan sebagai pengguna non-root untuk keamanan. Lihat `web/Dockerfile` untuk konfigurasi lengkap.
